@@ -1,5 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
 export const config = { runtime: 'edge' };
 
 const MAX_PER_DAY = parseInt(process.env.VITE_MAX_OCR_PER_DAY ?? '10');
@@ -77,9 +75,6 @@ export default async function handler(request: Request) {
 
   // ④ Gemini OCR
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
     const prompt = `이 이미지에서 영단어와 한국어 뜻 쌍을 모두 추출해줘.
 
 규칙:
@@ -91,17 +86,34 @@ export default async function handler(request: Request) {
 - 영단어-뜻 쌍이 없는 이미지면 [] 반환
 - 한국어 뜻이 없고 영어 설명만 있어도 그대로 포함`;
 
-    const result = await model.generateContent([
+    const geminiRes = await fetch(
+      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
       {
-        inlineData: {
-          mimeType: mimeType as string,
-          data: imageBase64,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY!,
         },
-      },
-      prompt,
-    ]);
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inlineData: { mimeType, data: imageBase64 } },
+              { text: prompt },
+            ],
+          }],
+        }),
+      }
+    );
 
-    const text = result.response.text().trim();
+    if (!geminiRes.ok) {
+      const errBody = await geminiRes.text();
+      throw new Error(`Gemini API error ${geminiRes.status}: ${errBody.slice(0, 200)}`);
+    }
+
+    const geminiData = await geminiRes.json() as {
+      candidates: { content: { parts: { text: string }[] } }[];
+    };
+    const text = geminiData.candidates[0].content.parts[0].text.trim();
 
     // JSON 파싱 — 혹시 마크다운 펜스가 붙어도 제거
     const cleaned = text.replace(/^```json\s*|^```\s*|```$/gm, '').trim();
