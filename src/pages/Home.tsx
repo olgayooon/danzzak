@@ -471,26 +471,26 @@ export default function Home() {
             📚
           </div>
           <div className="text-center">
-            <h1 className="text-[36px] font-extrabold text-[var(--color-ink)] tracking-tight mb-2">
+            <h1 className="text-[24px] sm:text-[32px] font-extrabold text-[var(--color-ink)] tracking-tight mb-2">
               DANZZAK에 오신 걸 환영해요!
             </h1>
-            <p className="text-[16px] text-[var(--color-ink-muted)] max-w-sm">
+            <p className="text-[14px] sm:text-[16px] text-[var(--color-ink-muted)] whitespace-nowrap">
               단어를 입력하면 즉시 퀴즈 게임과 인쇄용 시험지를 만들 수 있어요.
             </p>
           </div>
           <Button size="lg" onClick={() => navigate('/input')}>
             <Plus size={18} /> 첫 단어장 만들기
           </Button>
-          <div className="grid grid-cols-3 gap-4 max-w-lg mt-4">
+          <div className="grid grid-cols-3 gap-3 w-full max-w-sm sm:max-w-lg mt-4">
             {[
-              { icon: <BookOpen size={20} />, title: '게임처럼 재밌게', desc: '플래시카드, 빈칸 채우기 등 다양한 게임' },
-              { icon: <Gamepad2 size={20} />, title: '무료로 모든 기능', desc: '클래스카드 핵심 기능 완전 무료' },
-              { icon: <FileText size={20} />, title: '시험지 한 번에', desc: '클릭 몇 번으로 인쇄용 시험지 완성' },
+              { icon: <BookOpen size={18} />, title: '게임처럼 재밌게', desc: '다양한 게임으로 단어 암기' },
+              { icon: <Gamepad2 size={18} />, title: '무료로 모든 기능', desc: '핵심 기능 완전 무료' },
+              { icon: <FileText size={18} />, title: '시험지 한 번에', desc: '클릭 몇 번으로 완성' },
             ].map(f => (
-              <div key={f.title} className="flex flex-col items-center gap-2 p-4 bg-white rounded-[14px] border border-[var(--color-hairline)] text-center">
+              <div key={f.title} className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-[14px] border border-[var(--color-hairline)] text-center">
                 <div className="text-[var(--color-primary)]">{f.icon}</div>
-                <p className="text-[13px] font-semibold text-[var(--color-ink)]">{f.title}</p>
-                <p className="text-[12px] text-[var(--color-ink-muted)]">{f.desc}</p>
+                <p className="text-[12px] font-semibold text-[var(--color-ink)]">{f.title}</p>
+                <p className="text-[11px] text-[var(--color-ink-muted)]">{f.desc}</p>
               </div>
             ))}
           </div>
