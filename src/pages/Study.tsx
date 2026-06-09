@@ -6,7 +6,7 @@ import { ModeCard } from '../components/games/ModeCard';
 import { useWordSet } from '../hooks/useWordSet';
 import { useToast } from '../components/ui/Toast';
 import { type GameMode } from '../types/game';
-import { THEME_PRESETS, getTheme } from '../types/word';
+import { getTheme } from '../types/word';
 import { useIsDark } from '../hooks/useIsDark';
 import { buildWordSetShareUrl } from '../utils/shareWordSet';
 import { buildGameShareUrl } from '../utils/shareGame';
