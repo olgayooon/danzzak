@@ -52,17 +52,19 @@ export default async function handler(request: Request) {
 
   // ── POST /api/share ──────────────────────────────────────────
   if (request.method === 'POST') {
-    let words: unknown[], title: string;
+    let payload: Record<string, unknown>;
     try {
-      ({ words, title } = await request.json() as { words: unknown[]; title: string });
+      payload = await request.json() as Record<string, unknown>;
     } catch {
       return json({ error: 'invalid_body', message: '요청 형식이 올바르지 않아요.' }, 400);
     }
 
+    // words 배열 필수 검증
+    const words = payload.words;
     if (!Array.isArray(words) || words.length === 0 || words.length > MAX_WORDS) {
       return json({ error: 'invalid_words', message: `단어는 1~${MAX_WORDS}개만 공유할 수 있어요.` }, 400);
     }
-    if (typeof title !== 'string' || !title.trim()) {
+    if (typeof payload.title !== 'string' || !payload.title.trim()) {
       return json({ error: 'invalid_title', message: '제목이 필요해요.' }, 400);
     }
 
@@ -78,7 +80,8 @@ export default async function handler(request: Request) {
       return json({ error: 'collision', message: '잠시 후 다시 시도해주세요.' }, 503);
     }
 
-    const value = JSON.stringify({ words, title: title.trim() });
+    // payload 전체를 그대로 저장 (단어장·게임 공통)
+    const value = JSON.stringify({ ...payload, title: (payload.title as string).trim() });
     await redis(`/set/share:${code}`, 'POST', [value, 'EX', TTL]);
 
     const origin = url.origin.includes('localhost') ? url.origin : 'https://danzzak.vercel.app';

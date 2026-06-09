@@ -109,7 +109,7 @@ function FillBlankTable({ words, cols, fs, rowH, includeAnswer, questionField }:
               <colgroup><col style={{ width: '24px' }} /><col style={{ width: '45%' }} /><col /></colgroup>
               <tbody>
                 {group.map((word, i) => (
-                  <tr key={word.id} style={{ minHeight: rowH }}>
+                  <tr key={word.id} style={{ minHeight: rowH, breakInside: 'avoid' }}>
                     <td className="text-right pr-1.5 text-[var(--color-ink-faint)] align-top pt-1 whitespace-nowrap">{offset + i + 1}.</td>
                     <td className="align-top pt-1 pb-1 pr-2 text-[var(--color-ink-secondary)] leading-snug break-words">{getQuestionText(word, questionField)}</td>
                     <td className="align-bottom" style={{ borderBottom: '1.5px solid #18181B' }} />
@@ -136,10 +136,9 @@ function WriteRepeatTable({ words, cols, fs, lineSpacing, repeatCount }: {
         const offset = groups.slice(0, gi).reduce((s, g) => s + g.length, 0);
         return (
           <table key={gi} className="flex-1 border-collapse" style={{ fontSize: fs }}>
-            <tbody>
               {group.map((word, i) => (
-                <>
-                  <tr key={`${word.id}-l`}>
+                <tbody key={word.id} style={{ breakInside: 'avoid' }}>
+                  <tr>
                     <td className="text-right pr-1.5 text-[var(--color-ink-faint)] align-top pt-1" style={{ width: '22px', fontSize: '11px' }}>{offset + i + 1}.</td>
                     <td className="pt-1 pb-0.5">
                       <span className="font-bold text-[var(--color-ink)]">{word.term}</span>
@@ -147,14 +146,13 @@ function WriteRepeatTable({ words, cols, fs, lineSpacing, repeatCount }: {
                     </td>
                   </tr>
                   {Array.from({ length: repeatCount }).map((_, j) => (
-                    <tr key={`${word.id}-${j}`} style={{ height: lineH }}>
+                    <tr key={j} style={{ height: lineH }}>
                       <td /><td style={{ borderBottom: '1px solid #E4E4E7' }} />
                     </tr>
                   ))}
                   <tr style={{ height: '6px' }}><td /><td /></tr>
-                </>
+                </tbody>
               ))}
-            </tbody>
           </table>
         );
       })}
@@ -175,7 +173,7 @@ function ChecklistTable({ words, cols, fs, rowH }: {
             <colgroup><col style={{ width: '22px' }} /><col style={{ width: '18px' }} /><col style={{ width: '40%' }} /><col /></colgroup>
             <tbody>
               {group.map((word, i) => (
-                <tr key={word.id} style={{ height: rowH, borderBottom: '1px solid #E4E4E7' }}>
+                <tr key={word.id} style={{ height: rowH, borderBottom: '1px solid #E4E4E7', breakInside: 'avoid' }}>
                   <td className="text-right pr-1.5 text-[var(--color-ink-faint)] align-middle" style={{ fontSize: '11px' }}>{offset + i + 1}.</td>
                   <td className="align-middle px-1"><div className="w-3.5 h-3.5 rounded border border-[var(--color-ink)]" /></td>
                   <td className="align-middle font-semibold text-[var(--color-ink)] pr-2">{word.term}</td>
@@ -198,32 +196,30 @@ function MultipleChoiceTable({ words, fs, lineSpacing, includeAnswer, questionFi
     <>
       <table className="worksheet-section w-full table-fixed border-collapse" style={{ fontSize: fs }}>
         <colgroup><col style={{ width: '30px' }} /><col /></colgroup>
-        <tbody>
-          {words.map((word, i) => {
-            const choices = shuffleArray([word, ...shuffleArray(words.filter(w => w.id !== word.id)).slice(0, 3)]);
-            return (
-              <>
-                <tr key={`${word.id}-q`} style={{ height: rowH, borderTop: i > 0 ? '1px solid #E4E4E7' : undefined }}>
-                  <td className="text-right pr-2 text-[var(--color-ink-faint)] align-top pt-1.5" style={{ fontSize: '11px' }}>{i + 1}.</td>
-                  <td className="align-top pt-1.5 pr-4 font-semibold text-[var(--color-ink)] leading-snug break-words">{getQuestionText(word, questionField)}</td>
-                </tr>
-                <tr key={`${word.id}-c`} style={{ height: rowH }}>
-                  <td />
-                  <td className="pb-2">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 justify-items-start">
-                      {choices.map((c, j) => (
-                        <span key={c.id} className="flex min-w-0 items-start text-left text-[var(--color-ink-secondary)] leading-snug break-words">
-                          <span className="text-[var(--color-ink-faint)] mr-1">{String.fromCharCode(9312 + j)}</span>
-                          <span className="min-w-0 break-words">{getAnswerText(c, questionField)}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              </>
-            );
-          })}
-        </tbody>
+        {words.map((word, i) => {
+          const choices = shuffleArray([word, ...shuffleArray(words.filter(w => w.id !== word.id)).slice(0, 3)]);
+          return (
+            <tbody key={word.id} style={{ breakInside: 'avoid' }}>
+              <tr style={{ height: rowH, borderTop: i > 0 ? '1px solid #E4E4E7' : undefined }}>
+                <td className="text-right pr-2 text-[var(--color-ink-faint)] align-top pt-1.5" style={{ fontSize: '11px' }}>{i + 1}.</td>
+                <td className="align-top pt-1.5 pr-4 font-semibold text-[var(--color-ink)] leading-snug break-words">{getQuestionText(word, questionField)}</td>
+              </tr>
+              <tr style={{ height: rowH }}>
+                <td />
+                <td className="pb-2">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 justify-items-start">
+                    {choices.map((c, j) => (
+                      <span key={c.id} className="flex min-w-0 items-start text-left text-[var(--color-ink-secondary)] leading-snug break-words">
+                        <span className="text-[var(--color-ink-faint)] mr-1">{String.fromCharCode(9312 + j)}</span>
+                        <span className="min-w-0 break-words">{getAnswerText(c, questionField)}</span>
+                      </span>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          );
+        })}
       </table>
       {includeAnswer && <AnswerKeyTable words={words} cols={5} fs={fs} answerField={questionField === 'definition' ? 'term' : 'definition'} />}
     </>

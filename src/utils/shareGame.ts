@@ -41,6 +41,33 @@ function fromCompact(c: CompactPayload): GameSharePayload {
   };
 }
 
+/** 서버 단축 링크 생성 (게임 공유용) */
+export async function generateGameShareUrl(
+  set: WordSet,
+  gameMode: GameMode,
+  questionType?: 'term' | 'definition' | 'mixed',
+): Promise<string> {
+  const res = await fetch('/api/share', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: set.title,
+      emoji: set.emoji,
+      theme: set.theme,
+      words: set.words.map(w => ({ term: w.term, definition: w.definition })),
+      gameMode,
+      ...(questionType ? { questionType } : {}),
+    }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(data.message ?? '공유 링크 생성에 실패했어요.');
+  }
+  const { url } = await res.json() as { url: string };
+  return url;
+}
+
+/** 긴 URL 방식 — 폴백용으로 유지 */
 export function buildGameShareUrl(
   set: WordSet,
   gameMode: GameMode,

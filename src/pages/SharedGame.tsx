@@ -34,18 +34,30 @@ export default function SharedGame() {
   const shareHash = useRef('');
 
   useEffect(() => {
+    // /s/:code 경유 — location.state에 data가 있는 경우
+    const state = location.state as { data?: ReturnType<typeof decodeGameShare>; code?: string } | null;
+    if (state?.data) {
+      const p = state.data;
+      shareHash.current = (state.code ?? '').slice(0, 10);
+      setPayload(p);
+      try {
+        const raw = localStorage.getItem(SCORE_KEY_PREFIX + shareHash.current);
+        if (raw) setScores(JSON.parse(raw) as LocalScore[]);
+      } catch { /* ignore */ }
+      return;
+    }
+    // 기존 hash 방식
     const hash = location.hash.slice(1);
     if (!hash) { setError(true); return; }
     const p = decodeGameShare(hash);
     if (!p) { setError(true); return; }
     shareHash.current = hash.slice(0, 10);
     setPayload(p);
-    // 이전 기록 로드
     try {
       const raw = localStorage.getItem(SCORE_KEY_PREFIX + shareHash.current);
       if (raw) setScores(JSON.parse(raw) as LocalScore[]);
     } catch { /* ignore */ }
-  }, [location.hash]);
+  }, [location.hash, location.state]);
 
   function handleStart() {
     if (!payload || !nickname.trim()) return;

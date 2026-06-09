@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Plus, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { useWordSet } from '../hooks/useWordSet';
@@ -11,7 +11,6 @@ import { useIsDark } from '../hooks/useIsDark';
 export default function SharedSet() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { code } = useParams<{ code?: string }>();
   const { createSet } = useWordSet();
   const toast = useToast();
 
@@ -22,19 +21,10 @@ export default function SharedSet() {
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
-    // /s/:code — 서버에서 조회
-    if (code) {
-      fetch(`/api/share?code=${encodeURIComponent(code)}`)
-        .then(async res => {
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({})) as { message?: string };
-            setError(data.message ?? '링크가 만료됐거나 존재하지 않아요.');
-            return;
-          }
-          const data = await res.json() as { title: string; words: { term: string; definition: string }[] };
-          setPayload({ title: data.title, emoji: '📚', theme: 'violet', words: data.words });
-        })
-        .catch(() => setError(true));
+    // ShortLink 컴포넌트 경유 — location.state에 data가 있는 경우
+    const state = location.state as { data?: ReturnType<typeof decodeWordSetShare> } | null;
+    if (state?.data) {
+      setPayload(state.data);
       return;
     }
     // /shared/set#hash — 기존 인코딩 방식
@@ -43,7 +33,7 @@ export default function SharedSet() {
     const p = decodeWordSetShare(hash);
     if (!p) { setError(true); return; }
     setPayload(p);
-  }, [code, location.hash]);
+  }, [location.hash, location.state]);
 
   if (error) {
     return (

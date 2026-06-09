@@ -9,7 +9,8 @@ import { type GameMode } from '../types/game';
 import { getTheme } from '../types/word';
 import { useIsDark } from '../hooks/useIsDark';
 import { generateShareUrl } from '../utils/shareWordSet';
-import { buildGameShareUrl } from '../utils/shareGame';
+import { generateGameShareUrl } from '../utils/shareGame';
+import { ReactNode } from 'react';
 import { cn } from '../utils/cn';
 
 interface StudyMode {
@@ -63,7 +64,7 @@ export default function Study() {
   const { sets, setActiveSetId } = useWordSet();
   const toast = useToast();
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
-  const [sharingSet, setSharingSet] = useState(false);
+  const [sharingKey, setSharingKey] = useState<string | null>(null);
 
   const currentTab = (searchParams.get('tab') || 'words') as TabType;
   const weakOnly = searchParams.get('weakOnly') === 'true';
@@ -127,18 +128,18 @@ export default function Study() {
     setShareMenuOpen(false);
   }
 
-  async function handleShareSet() {
-    if (!wordSet || sharingSet) return;
-    setSharingSet(true);
+  async function handleShare(key: string, getUrl: () => Promise<string>) {
+    if (!wordSet || sharingKey) return;
+    setSharingKey(key);
     try {
-      const url = await generateShareUrl(wordSet);
+      const url = await getUrl();
       await navigator.clipboard.writeText(url);
-      toast('단어장 링크를 복사했어요!', 'success');
+      toast('링크를 복사했어요!', 'success');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '링크 생성에 실패했어요.';
       toast(msg, 'error');
     } finally {
-      setSharingSet(false);
+      setSharingKey(null);
       setShareMenuOpen(false);
     }
   }
@@ -196,69 +197,38 @@ export default function Study() {
             <>
               <div className="fixed inset-0 z-30" onClick={() => setShareMenuOpen(false)} />
               <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 z-40 bg-[var(--color-surface)] border border-[var(--color-hairline)] rounded-[14px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-y-auto max-h-[60vh] min-w-[200px] max-w-[calc(100vw-32px)] sm:max-w-none animate-fade-in">
-                <button
-                  onClick={handleShareSet}
-                  disabled={sharingSet}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-left hover:bg-[var(--color-canvas)] transition-colors disabled:opacity-60"
-                >
-                  {sharingSet
-                    ? <div className="w-[15px] h-[15px] rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin shrink-0" />
-                    : <Link size={15} className="text-[var(--color-primary)] shrink-0" />
-                  }
-                  <div>
-                    <p className="font-semibold text-[var(--color-ink)]">단어장 공유</p>
-                    <p className="text-[11px] text-[var(--color-ink-muted)]">
-                      {sharingSet ? '링크 생성 중...' : '받는 사람이 내 단어장에 추가'}
-                    </p>
-                  </div>
-                </button>
+                {/* 단어장 공유 */}
+                <ShareMenuItem
+                  icon={<Link size={15} className="text-[var(--color-primary)] shrink-0" />}
+                  label="단어장 공유"
+                  description="받는 사람이 내 단어장에 추가"
+                  loading={sharingKey === 'set'}
+                  onClick={() => handleShare('set', () => generateShareUrl(wordSet))}
+                />
                 <div className="h-px bg-[var(--color-hairline)]" />
                 {allModes.map(mode => (
                   mode.id === 'multiple-choice' ? (
                     <div key={mode.id}>
-                      <button
-                        onClick={() => copyUrl(buildGameShareUrl(wordSet, 'multiple-choice', 'term'))}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-[14px] text-left hover:bg-[var(--color-canvas)] transition-colors"
-                      >
-                        <span className="text-lg">{mode.icon}</span>
-                        <div>
-                          <p className="font-semibold text-[var(--color-ink)]">4지선다 · 뜻 고르기</p>
-                          <p className="text-[11px] text-[var(--color-ink-muted)]">단어 보고 뜻 선택</p>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => copyUrl(buildGameShareUrl(wordSet, 'multiple-choice', 'definition'))}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-[14px] text-left hover:bg-[var(--color-canvas)] transition-colors"
-                      >
-                        <span className="text-lg">{mode.icon}</span>
-                        <div>
-                          <p className="font-semibold text-[var(--color-ink)]">4지선다 · 단어 고르기</p>
-                          <p className="text-[11px] text-[var(--color-ink-muted)]">뜻 보고 단어 선택</p>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => copyUrl(buildGameShareUrl(wordSet, 'multiple-choice', 'mixed'))}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-[14px] text-left hover:bg-[var(--color-canvas)] transition-colors"
-                      >
-                        <span className="text-lg">{mode.icon}</span>
-                        <div>
-                          <p className="font-semibold text-[var(--color-ink)]">4지선다 · 랜덤 혼합</p>
-                          <p className="text-[11px] text-[var(--color-ink-muted)]">뜻/단어 무작위 출제</p>
-                        </div>
-                      </button>
+                      {(['term', 'definition', 'mixed'] as const).map(qt => (
+                        <ShareMenuItem
+                          key={qt}
+                          icon={<span className="text-lg">{mode.icon}</span>}
+                          label={`4지선다 · ${qt === 'term' ? '뜻 고르기' : qt === 'definition' ? '단어 고르기' : '랜덤 혼합'}`}
+                          description={qt === 'term' ? '단어 보고 뜻 선택' : qt === 'definition' ? '뜻 보고 단어 선택' : '뜻/단어 무작위 출제'}
+                          loading={sharingKey === `mc-${qt}`}
+                          onClick={() => handleShare(`mc-${qt}`, () => generateGameShareUrl(wordSet, 'multiple-choice', qt))}
+                        />
+                      ))}
                     </div>
                   ) : (
-                  <button
-                    key={mode.id}
-                    onClick={() => copyUrl(buildGameShareUrl(wordSet, mode.id as GameMode))}
-                    className="flex items-center gap-3 w-full px-4 py-2.5 text-[14px] text-left hover:bg-[var(--color-canvas)] transition-colors"
-                  >
-                    <span className="text-lg">{mode.icon}</span>
-                    <div>
-                      <p className="font-semibold text-[var(--color-ink)]">{mode.title}</p>
-                      <p className="text-[11px] text-[var(--color-ink-muted)]">닉네임 입력 후 바로 플레이</p>
-                    </div>
-                  </button>
+                    <ShareMenuItem
+                      key={mode.id}
+                      icon={<span className="text-lg">{mode.icon}</span>}
+                      label={mode.title}
+                      description="닉네임 입력 후 바로 플레이"
+                      loading={sharingKey === mode.id}
+                      onClick={() => handleShare(mode.id, () => generateGameShareUrl(wordSet, mode.id as GameMode))}
+                    />
                   )
                 ))}
                 <div className="h-px bg-[var(--color-hairline)]" />
@@ -532,5 +502,33 @@ export default function Study() {
         </Button>
       </div>
     </div>
+  );
+}
+
+
+function ShareMenuItem({
+  icon, label, description, loading, onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  description: string;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className="flex items-center gap-3 w-full px-4 py-2.5 text-[14px] text-left hover:bg-[var(--color-canvas)] transition-colors disabled:opacity-60"
+    >
+      {loading
+        ? <div className="w-[18px] h-[18px] rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin shrink-0" />
+        : icon
+      }
+      <div>
+        <p className="font-semibold text-[var(--color-ink)]">{label}</p>
+        <p className="text-[11px] text-[var(--color-ink-muted)]">{loading ? '링크 생성 중...' : description}</p>
+      </div>
+    </button>
   );
 }
