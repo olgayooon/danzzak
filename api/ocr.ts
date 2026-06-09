@@ -95,7 +95,7 @@ export default async function handler(request: Request) {
 - 영단어-뜻 쌍이 없는 이미지면 [] 반환`;
 
     const geminiRes = await fetch(
-      'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
       {
         method: 'POST',
         headers: {
