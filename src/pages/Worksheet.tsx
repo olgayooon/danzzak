@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Printer, Share2, Check, Pencil, Eye } from 'lucide-react';
+import { ArrowLeft, Printer, Share2, Check, Pencil, Eye, FileDown } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -283,22 +283,36 @@ export default function Worksheet() {
             )}
           </div>
 
-          <div className="flex gap-2">
-            <Button size="md" onClick={() => window.print()} className="flex-1">
-              <Printer size={15} /> 인쇄
-            </Button>
-            <Button size="md" variant="secondary" onClick={handleShare} className="flex-1">
-              {copied ? <Check size={15} /> : <Share2 size={15} />}
-              {copied ? '복사!' : '공유'}
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <Button size="md" onClick={() => window.print()} className="flex-1">
+                <Printer size={15} /> 인쇄
+              </Button>
+              <Button size="md" variant="secondary" onClick={handleShare} className="flex-1">
+                {copied ? <Check size={15} /> : <Share2 size={15} />}
+                {copied ? '복사!' : '공유'}
+              </Button>
+            </div>
+            <Button
+              size="md"
+              variant="utility"
+              className="w-full"
+              onClick={() => {
+                toast('인쇄 창이 열리면 "PDF로 저장"을 선택하세요.', 'success');
+                setTimeout(() => window.print(), 300);
+              }}
+            >
+              <FileDown size={15} /> PDF 저장
             </Button>
           </div>
         </div>
 
         {/* 시험지 미리보기 */}
-        <div
-          className="flex-1 worksheet-container bg-[var(--color-surface)] rounded-[16px] border border-[var(--color-hairline)] p-8 shadow-[0_2px_8px_rgba(124,58,237,0.08)]"
-          style={{ minHeight: '842px' }}
-        >
+        <div className="flex-1 overflow-x-auto rounded-[16px]">
+          <div
+            className="worksheet-container bg-[var(--color-surface)] rounded-[16px] border border-[var(--color-hairline)] p-8 shadow-[0_2px_8px_rgba(124,58,237,0.08)] min-w-[680px]"
+            style={{ minHeight: '842px' }}
+          >
           {/* 시험지 헤더 */}
           <div className="worksheet-header border-b-2 border-[var(--color-ink)] pb-3 mb-5">
             <div className="flex items-end justify-between gap-4">
@@ -344,6 +358,7 @@ export default function Worksheet() {
               lineSpacing={lineSpacing}
             />
           )}
+          </div>
         </div>
       </div>
     </div>
