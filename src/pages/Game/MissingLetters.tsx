@@ -7,7 +7,7 @@ import { ResultScreen } from '../../components/games/ResultScreen';
 import { useGameWordSet } from '../../hooks/useGameWordSet';
 import { useStudyRecord } from '../../hooks/useStudyRecord';
 import { shuffleArray } from '../../utils/gameUtils';
-import { playSound, triggerParticleAt, triggerConfetti, triggerGlow } from '../../utils/feedback';
+import { playSound, triggerConfetti, triggerGlow } from '../../utils/feedback';
 import { THEME_PRESETS } from '../../types/word';
 import type { GameResult } from '../../types/game';
 import type { Word } from '../../types/word';

@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { ModeCard } from '../components/games/ModeCard';
 import { useWordSet } from '../hooks/useWordSet';
 import { useToast } from '../components/ui/Toast';
-import { GAME_MODE_INFO, type GameMode } from '../types/game';
+import { type GameMode } from '../types/game';
 import { THEME_PRESETS } from '../types/word';
 import { buildWordSetShareUrl } from '../utils/shareWordSet';
 import { buildGameShareUrl } from '../utils/shareGame';
@@ -96,6 +96,7 @@ export default function Study() {
       toast(`이 게임은 단어가 최소 ${mode.minWords}개 필요해요.`, 'error');
       return;
     }
+    if (!wordSet) return;
     setActiveSetId(wordSet.id);
     const query = weakOnly ? '?weakOnly=true' : '';
     navigate(`/game/${mode.id}/${setId}${query}`);

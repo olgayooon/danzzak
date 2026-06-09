@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { HUDState } from '../../hooks/useCloudJumpGame';
 
 const MAX_LIVES = 3;

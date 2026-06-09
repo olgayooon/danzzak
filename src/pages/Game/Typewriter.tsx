@@ -1,6 +1,6 @@
 import { useState, useReducer, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, RotateCcw } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { ProgressBar } from '../../components/games/ProgressBar';
 import { ResultScreen } from '../../components/games/ResultScreen';
@@ -127,7 +127,7 @@ export default function TypewriterGame() {
   const [state, dispatch] = useReducer(reducer, wordSet?.words ?? [], s => ({
     words: shuffleArray(s),
     index: 0,
-    phase: 'exposing',
+    phase: 'exposing' as Phase,
     input: '',
     score: 0,
     correct: 0,
@@ -153,7 +153,7 @@ export default function TypewriterGame() {
     if (state.phase !== 'exposing' || !exposing) return;
     const id = setTimeout(() => {
       setExposing(false);
-      dispatch({ type: 'START_TYPING' });
+      dispatch({ type: 'START_TYPING', exposeDuration: exposeDurationRef.current });
       setTimeout(() => inputRef.current?.focus(), 50);
     }, exposeDurationRef.current);
     return () => clearTimeout(id);
