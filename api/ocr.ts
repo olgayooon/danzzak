@@ -9,7 +9,11 @@ export default async function handler(request: Request) {
     return new Response('Method Not Allowed', { status: 405 });
   }
 
-  const { imageBase64, mimeType, accessCode } = await request.json();
+  const { imageBase64, mimeType, accessCode } = await request.json() as {
+    imageBase64: string;
+    mimeType: string;
+    accessCode: string;
+  };
 
   // ① 접속 코드 검증
   if (!accessCode || accessCode !== process.env.OCR_ACCESS_CODE) {
@@ -30,7 +34,7 @@ export default async function handler(request: Request) {
       `${process.env.UPSTASH_REDIS_REST_URL}/get/${kvKey}`,
       { headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` } }
     );
-    const kvData = await kvRes.json();
+    const kvData = await kvRes.json() as { result?: string };
     count = parseInt(kvData.result ?? '0');
   } catch {
     console.warn('KV read failed, skipping rate limit');
