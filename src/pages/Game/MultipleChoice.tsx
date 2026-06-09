@@ -9,7 +9,8 @@ import { useGameWordSet } from '../../hooks/useGameWordSet';
 import { useStudyRecord } from '../../hooks/useStudyRecord';
 import { shuffleArray, generateChoices } from '../../utils/gameUtils';
 import { playSound, triggerParticleAt, triggerConfetti, triggerGlow } from '../../utils/feedback';
-import { THEME_PRESETS } from '../../types/word';
+import { getTheme } from '../../types/word';
+import { useIsDark } from '../../hooks/useIsDark';
 import { readSharedGameSession } from '../../utils/shareGame';
 import type { GameResult } from '../../types/game';
 import type { Word } from '../../types/word';
@@ -46,7 +47,8 @@ export default function MultipleChoiceGame() {
   const { wordSet, updateWordStats, returnPath, restorePending } = useGameWordSet(setId);
   const { addRecord } = useStudyRecord();
 
-  const theme   = wordSet ? THEME_PRESETS[wordSet.theme] : THEME_PRESETS.violet;
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
 
   const sharedQuestionType = useMemo(() => {
     if (!setId?.startsWith('_shared_')) return null;
@@ -182,21 +184,21 @@ export default function MultipleChoiceGame() {
         <div className="w-full grid grid-cols-1 gap-3">
           <button
             onClick={() => setQuestionMode('term')}
-            className="w-full p-6 rounded-[16px] border-2 border-[var(--color-hairline)] bg-white hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all text-left"
+            className="w-full p-6 rounded-[16px] border-2 border-[var(--color-hairline)] bg-[var(--color-surface)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all text-left"
           >
             <p className="text-[16px] font-bold text-[var(--color-ink)] mb-1">단어를 보고 뜻 고르기</p>
             <p className="text-[13px] text-[var(--color-ink-muted)]">영단어가 나오면 한글 뜻을 선택합니다</p>
           </button>
           <button
             onClick={() => setQuestionMode('definition')}
-            className="w-full p-6 rounded-[16px] border-2 border-[var(--color-hairline)] bg-white hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all text-left"
+            className="w-full p-6 rounded-[16px] border-2 border-[var(--color-hairline)] bg-[var(--color-surface)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all text-left"
           >
             <p className="text-[16px] font-bold text-[var(--color-ink)] mb-1">뜻을 보고 단어 고르기</p>
             <p className="text-[13px] text-[var(--color-ink-muted)]">한글 뜻이 나오면 영단어를 선택합니다</p>
           </button>
           <button
             onClick={() => setQuestionMode('mixed')}
-            className="w-full p-6 rounded-[16px] border-2 border-[var(--color-hairline)] bg-white hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all text-left"
+            className="w-full p-6 rounded-[16px] border-2 border-[var(--color-hairline)] bg-[var(--color-surface)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all text-left"
           >
             <p className="text-[16px] font-bold text-[var(--color-ink)] mb-1">랜덤 혼합</p>
             <p className="text-[13px] text-[var(--color-ink-muted)]">뜻 고르기와 단어 고르기가 무작위로 섞입니다</p>
@@ -260,11 +262,11 @@ export default function MultipleChoiceGame() {
                     isSelected &&  isCorrect && 'bg-[var(--color-success)] border-[var(--color-success)] text-white animate-correct-pop',
                     isSelected && !isCorrect && 'bg-[var(--color-danger)]  border-[var(--color-danger)]  text-white animate-wrong-shake',
                     selected   && !isSelected && isCorrect  && 'bg-[var(--color-success-subtle)] border-[var(--color-success)] text-[var(--color-success)]',
-                    selected   && !isSelected && !isCorrect && 'opacity-50 bg-white border-[var(--color-hairline)]',
+                    selected   && !isSelected && !isCorrect && 'opacity-50 bg-[var(--color-surface)] border-[var(--color-hairline)]',
                   )}
-                  style={!selected ? { backgroundColor: 'white', borderColor: theme.cardBorder } : undefined}
+                  style={!selected ? { backgroundColor: theme.cardBg, borderColor: theme.cardBorder } : undefined}
                   onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = theme.primary; e.currentTarget.style.backgroundColor = theme.cardBg; } }}
-                  onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = theme.cardBorder; e.currentTarget.style.backgroundColor = 'white'; } }}
+                  onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = theme.cardBorder; e.currentTarget.style.backgroundColor = theme.cardBg; } }}
                 >
                   <span className="mr-2 text-[var(--color-ink-faint)]">{String.fromCharCode(65 + i)}.</span>
                   {choice}

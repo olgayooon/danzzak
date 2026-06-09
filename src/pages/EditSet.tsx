@@ -99,7 +99,7 @@ export default function EditSet() {
 
       <div className="flex flex-col gap-6">
         {/* 기본 정보 */}
-        <div className="bg-white rounded-[20px] border border-[var(--color-hairline)] p-6">
+        <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] p-6">
           <h2 className="text-[16px] font-bold text-[var(--color-ink)] mb-4">단어장 정보</h2>
           <div className="flex gap-3 items-end mb-4">
             <div className="relative">
@@ -144,7 +144,7 @@ export default function EditSet() {
         </div>
 
         {/* 단어 편집 */}
-        <div className="bg-white rounded-[20px] border border-[var(--color-hairline)] p-6">
+        <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[16px] font-bold text-[var(--color-ink)]">단어 목록</h2>
             <span className="text-[13px] text-[var(--color-ink-muted)]">{words.filter(w => w.term && w.definition).length}개</span>

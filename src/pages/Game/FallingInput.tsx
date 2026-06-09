@@ -63,7 +63,7 @@ export const FallingInput = memo(function FallingInput({
         className={cn(
           'flex-1 border-2 rounded-[12px] px-4 py-3 text-[16px] font-semibold outline-none transition-colors',
           shaking && 'animate-wrong-shake border-[var(--color-danger)] bg-[var(--color-danger-subtle)] text-[var(--color-danger)]',
-          !shaking && 'bg-white',
+          !shaking && 'bg-[var(--color-surface)]',
         )}
         style={!shaking ? { borderColor: theme.primary } : {}}
         aria-label="단어 입력"

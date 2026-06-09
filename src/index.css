@@ -246,6 +246,38 @@
   backface-visibility: hidden;
 }
 
+/* ── 다크 모드 ─────────────────────────────────────────── */
+
+.dark {
+  --color-primary: #A78BFA;
+  --color-primary-hover: #8B5CF6;
+  --color-primary-active: #7C3AED;
+  --color-primary-subtle: #2E1065;
+  --color-on-primary: #FFFFFF;
+
+  --color-secondary: #F472B6;
+  --color-secondary-subtle: #831843;
+
+  --color-canvas: #0F0F11;
+  --color-surface: #1C1B20;
+  --color-surface-raised: #27263A;
+
+  --color-ink: #F4F4F5;
+  --color-ink-secondary: #D4D4D8;
+  --color-ink-muted: #A1A1AA;
+  --color-ink-faint: #71717A;
+
+  --color-hairline: #27272A;
+
+  --color-success: #34D399;
+  --color-success-subtle: #064E3B;
+  --color-danger: #F87171;
+  --color-danger-subtle: #7F1D1D;
+  --color-warning: #FBBF24;
+  --color-warning-subtle: #78350F;
+  --color-info: #60A5FA;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card-flip { transition: none; }
   .animate-correct-pop,
@@ -255,6 +287,14 @@
 }
 
 @media print {
+  html.dark {
+    --color-canvas: #FAFAF9;
+    --color-surface: #FFFFFF;
+    --color-ink: #18181B;
+    --color-ink-secondary: #3F3F46;
+    --color-ink-muted: #71717A;
+    --color-hairline: #E4E4E7;
+  }
   .no-print { display: none !important; }
   .print-only { display: block !important; }
   html, body { background: white; }

@@ -11,7 +11,8 @@ import {
   playSound, triggerParticleAt, triggerScorePopup,
   triggerConfetti, triggerGlow,
 } from '../../utils/feedback';
-import { THEME_PRESETS } from '../../types/word';
+import { getTheme } from '../../types/word';
+import { useIsDark } from '../../hooks/useIsDark';
 import type { GameResult } from '../../types/game';
 import type { Word } from '../../types/word';
 import { cn } from '../../utils/cn';
@@ -25,7 +26,8 @@ export default function SpeedQuizGame() {
   const { wordSet, updateWordStats, returnPath, restorePending } = useGameWordSet(setId);
   const { addRecord } = useStudyRecord();
 
-  const theme   = wordSet ? THEME_PRESETS[wordSet.theme] : THEME_PRESETS.violet;
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
 
   const words = useRef(shuffleArray(wordSet?.words ?? []));
   const [index,           setIndex]          = useState(0);
@@ -285,7 +287,7 @@ export default function SpeedQuizGame() {
           'w-full border-2 rounded-[12px] px-4 py-3 text-[18px] font-semibold outline-none transition-all text-center',
           feedback === 'correct' && 'border-[var(--color-success)] bg-[var(--color-success-subtle)] text-[var(--color-success)] animate-correct-pop',
           feedback === 'wrong'   && 'border-[var(--color-danger)]  bg-[var(--color-danger-subtle)]  text-[var(--color-danger)]  animate-wrong-shake',
-          !feedback && 'border-[var(--color-hairline)] bg-white',
+          !feedback && 'border-[var(--color-hairline)] bg-[var(--color-surface)]',
         )}
         style={!feedback ? { borderColor: theme.primary } : {}}
       />

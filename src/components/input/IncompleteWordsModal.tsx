@@ -80,7 +80,7 @@ export function IncompleteWordsModal({
                   'border rounded-[10px] px-3 py-2 text-[14px] font-mono outline-none transition-all',
                   termEmpty
                     ? 'border-[var(--color-warning)] bg-[var(--color-warning-subtle)] placeholder:text-[var(--color-warning)]'
-                    : 'border-[var(--color-hairline)] bg-white',
+                    : 'border-[var(--color-hairline)] bg-[var(--color-surface)]',
                   'focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
                 )}
                 aria-label="단어 입력"
@@ -93,7 +93,7 @@ export function IncompleteWordsModal({
                   'border rounded-[10px] px-3 py-2 text-[14px] outline-none transition-all',
                   defEmpty
                     ? 'border-[var(--color-warning)] bg-[var(--color-warning-subtle)] placeholder:text-[var(--color-warning)]'
-                    : 'border-[var(--color-hairline)] bg-white',
+                    : 'border-[var(--color-hairline)] bg-[var(--color-surface)]',
                   'focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
                 )}
                 aria-label="뜻 입력"

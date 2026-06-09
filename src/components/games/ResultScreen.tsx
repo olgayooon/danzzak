@@ -42,7 +42,7 @@ export function ResultScreen({ result, onRetry }: ResultScreenProps) {
           { label: '오답', value: result.wrong, color: 'text-[var(--color-danger)]' },
           { label: '최고 콤보', value: result.combo, color: 'text-[var(--color-accent-yellow)]' },
         ].map(stat => (
-          <div key={stat.label} className="flex flex-col items-center bg-white rounded-[14px] p-4 border border-[var(--color-hairline)]">
+          <div key={stat.label} className="flex flex-col items-center bg-[var(--color-surface)] rounded-[14px] p-4 border border-[var(--color-hairline)]">
             <span className={`text-[24px] font-bold ${stat.color}`}>{stat.value}</span>
             <span className="text-[12px] text-[var(--color-ink-muted)] mt-0.5">{stat.label}</span>
           </div>
@@ -63,7 +63,7 @@ export function ResultScreen({ result, onRetry }: ResultScreenProps) {
             {showWrong ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
           {showWrong && (
-            <div className="mt-2 rounded-[14px] border border-[var(--color-hairline)] bg-white overflow-hidden">
+            <div className="mt-2 rounded-[14px] border border-[var(--color-hairline)] bg-[var(--color-surface)] overflow-hidden">
               {result.wrongWords.map((word, i) => (
                 <div
                   key={word.id}

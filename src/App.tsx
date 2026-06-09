@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { NavBar } from './components/NavBar';
 import { ToastProvider } from './components/ui/Toast';
+import { useTheme } from './hooks/useTheme';
 
 const Home = lazy(() => import('./pages/Home'));
 const Input = lazy(() => import('./pages/Input'));
@@ -30,37 +31,44 @@ function PageLoader() {
   );
 }
 
+function AppInner() {
+  useTheme();
+  return (
+    <BrowserRouter>
+      <NavBar />
+      <main>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/input" element={<Input />} />
+            <Route path="/study/:setId" element={<Study />} />
+            <Route path="/edit/:setId" element={<EditSet />} />
+            <Route path="/game/flashcard/:setId" element={<FlashcardGame />} />
+            <Route path="/game/multiple-choice/:setId" element={<MultipleChoiceGame />} />
+            <Route path="/game/fill-in/:setId" element={<FillInGame />} />
+            <Route path="/game/matching/:setId" element={<MatchingGame />} />
+            <Route path="/game/falling/:setId" element={<FallingGame />} />
+            <Route path="/game/speed-quiz/:setId" element={<SpeedQuizGame />} />
+            <Route path="/game/cloud-jump/:setId" element={<CloudJumpGame />} />
+            <Route path="/game/typewriter/:setId" element={<TypewriterGame />} />
+            <Route path="/game/missing-letters/:setId" element={<MissingLettersGame />} />
+            <Route path="/worksheet/:setId" element={<Worksheet />} />
+            <Route path="/share/worksheet" element={<SharedWorksheet />} />
+            <Route path="/shared/set" element={<SharedSet />} />
+            <Route path="/shared/game" element={<SharedGame />} />
+            <Route path="/records" element={<Records />} />
+            <Route path="*" element={<Home />} />
+          </Routes>
+        </Suspense>
+      </main>
+    </BrowserRouter>
+  );
+}
+
 export default function App() {
   return (
     <ToastProvider>
-      <BrowserRouter>
-        <NavBar />
-        <main>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/input" element={<Input />} />
-              <Route path="/study/:setId" element={<Study />} />
-              <Route path="/edit/:setId" element={<EditSet />} />
-              <Route path="/game/flashcard/:setId" element={<FlashcardGame />} />
-              <Route path="/game/multiple-choice/:setId" element={<MultipleChoiceGame />} />
-              <Route path="/game/fill-in/:setId" element={<FillInGame />} />
-              <Route path="/game/matching/:setId" element={<MatchingGame />} />
-              <Route path="/game/falling/:setId" element={<FallingGame />} />
-              <Route path="/game/speed-quiz/:setId" element={<SpeedQuizGame />} />
-              <Route path="/game/cloud-jump/:setId" element={<CloudJumpGame />} />
-              <Route path="/game/typewriter/:setId" element={<TypewriterGame />} />
-              <Route path="/game/missing-letters/:setId" element={<MissingLettersGame />} />
-              <Route path="/worksheet/:setId" element={<Worksheet />} />
-              <Route path="/share/worksheet" element={<SharedWorksheet />} />
-              <Route path="/shared/set" element={<SharedSet />} />
-              <Route path="/shared/game" element={<SharedGame />} />
-              <Route path="/records" element={<Records />} />
-              <Route path="*" element={<Home />} />
-            </Routes>
-          </Suspense>
-        </main>
-      </BrowserRouter>
+      <AppInner />
     </ToastProvider>
   );
 }

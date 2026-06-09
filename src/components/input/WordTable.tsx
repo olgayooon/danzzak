@@ -59,8 +59,8 @@ export function WordTable({ words, onChange, highlightIds }: WordTableProps) {
                 className={cn(
                   'rounded-[10px] px-3 py-2 text-[15px] font-mono outline-none transition-all',
                   termEmpty
-                    ? 'bg-white border-2 border-[var(--color-warning)] focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
-                    : 'bg-white border border-[var(--color-hairline)] focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
+                    ? 'bg-[var(--color-surface)] border-2 border-[var(--color-warning)] focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
+                    : 'bg-[var(--color-surface)] border border-[var(--color-hairline)] focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
                 )}
                 aria-label={`단어 ${idx + 1}`}
                 aria-invalid={termEmpty}
@@ -72,8 +72,8 @@ export function WordTable({ words, onChange, highlightIds }: WordTableProps) {
                 className={cn(
                   'rounded-[10px] px-3 py-2 text-[15px] outline-none transition-all',
                   defEmpty
-                    ? 'bg-white border-2 border-[var(--color-warning)] focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
-                    : 'bg-white border border-[var(--color-hairline)] focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
+                    ? 'bg-[var(--color-surface)] border-2 border-[var(--color-warning)] focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
+                    : 'bg-[var(--color-surface)] border border-[var(--color-hairline)] focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]'
                 )}
                 aria-label={`뜻 ${idx + 1}`}
                 aria-invalid={defEmpty}

@@ -18,8 +18,8 @@ export function ModeCard({ icon, title, description, badge, onClick, disabled, d
       className={cn(
         'w-full p-3 rounded-lg border transition-all text-left',
         !disabled && !dimmed
-          ? 'border-[var(--color-hairline)] bg-white hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] cursor-pointer'
-          : 'border-[var(--color-hairline)] bg-white cursor-not-allowed',
+          ? 'border-[var(--color-hairline)] bg-[var(--color-surface)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] cursor-pointer'
+          : 'border-[var(--color-hairline)] bg-[var(--color-surface)] cursor-not-allowed',
         (disabled || dimmed) && 'opacity-50'
       )}
     >

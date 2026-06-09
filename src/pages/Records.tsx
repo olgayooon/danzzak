@@ -5,7 +5,8 @@ import { useStudyRecord, calcAccuracy } from '../hooks/useStudyRecord';
 import { useWordSet } from '../hooks/useWordSet';
 import { GAME_MODE_INFO } from '../types/game';
 import { Badge } from '../components/ui/Badge';
-import { THEME_PRESETS } from '../types/word';
+import { getTheme } from '../types/word';
+import { useIsDark } from '../hooks/useIsDark';
 import { cn } from '../utils/cn';
 
 function formatDuration(secs: number) {
@@ -39,7 +40,8 @@ function SetRecordsView({ setId }: { setId: string }) {
     .slice()
     .sort((a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime());
 
-  const theme = wordSet ? THEME_PRESETS[wordSet.theme] : THEME_PRESETS.violet;
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
 
   const totalGames = setRecords.length;
   const avgAccuracy = totalGames > 0
@@ -100,7 +102,7 @@ function SetRecordsView({ setId }: { setId: string }) {
               { icon: <Zap size={16} />, label: '최고 콤보', value: `${maxCombo}`, color: 'text-[var(--color-accent-yellow)]' },
               { icon: <Clock size={16} />, label: '총 학습 시간', value: formatDuration(totalTime), color: 'text-[var(--color-info)]' },
             ].map(stat => (
-              <div key={stat.label} className="bg-white rounded-[14px] border border-[var(--color-hairline)] p-3 flex flex-col gap-1.5">
+              <div key={stat.label} className="bg-[var(--color-surface)] rounded-[14px] border border-[var(--color-hairline)] p-3 flex flex-col gap-1.5">
                 <div className={stat.color}>{stat.icon}</div>
                 <p className={`text-[20px] font-extrabold ${stat.color}`}>{stat.value}</p>
                 <p className="text-[11px] text-[var(--color-ink-muted)]">{stat.label}</p>
@@ -119,7 +121,7 @@ function SetRecordsView({ setId }: { setId: string }) {
                 return (
                   <div
                     key={mode}
-                    className="bg-white rounded-[12px] border border-[var(--color-hairline)] px-4 py-3 flex items-center gap-3"
+                    className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-hairline)] px-4 py-3 flex items-center gap-3"
                   >
                     <span className="text-xl shrink-0">{modeInfo.emoji}</span>
                     <div className="flex-1 min-w-0">
@@ -146,7 +148,7 @@ function SetRecordsView({ setId }: { setId: string }) {
                 return (
                   <div
                     key={idx}
-                    className="bg-white rounded-[12px] border border-[var(--color-hairline)] px-4 py-3 flex items-center gap-3"
+                    className="bg-[var(--color-surface)] rounded-[12px] border border-[var(--color-hairline)] px-4 py-3 flex items-center gap-3"
                   >
                     <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-xl shrink-0" style={{ backgroundColor: theme.cardBg }}>
                       {modeInfo.emoji}
@@ -223,7 +225,7 @@ export default function Records() {
           { icon: <Zap size={18} />, label: '최고 콤보', value: `${maxCombo}`, color: 'text-[var(--color-accent-yellow)]' },
           { icon: <Clock size={18} />, label: '총 학습 시간', value: formatDuration(totalTime), color: 'text-[var(--color-info)]' },
         ].map(stat => (
-          <div key={stat.label} className="bg-white rounded-[16px] border border-[var(--color-hairline)] p-4 flex flex-col gap-2">
+          <div key={stat.label} className="bg-[var(--color-surface)] rounded-[16px] border border-[var(--color-hairline)] p-4 flex flex-col gap-2">
             <div className={`${stat.color}`}>{stat.icon}</div>
             <p className={`text-[22px] font-extrabold ${stat.color}`}>{stat.value}</p>
             <p className="text-[12px] text-[var(--color-ink-muted)]">{stat.label}</p>
@@ -247,7 +249,7 @@ export default function Records() {
               <div key={setId} className="border border-[var(--color-hairline)] rounded-[14px] overflow-hidden">
                 <button
                   onClick={() => toggleSet(setId)}
-                  className="w-full bg-white hover:bg-[var(--color-canvas)] transition-colors p-4 flex items-center gap-3"
+                  className="w-full bg-[var(--color-surface)] hover:bg-[var(--color-canvas)] transition-colors p-4 flex items-center gap-3"
                 >
                   <ChevronDown
                     size={18}
@@ -296,11 +298,11 @@ export default function Records() {
                           key={idx}
                           onClick={() => navigate(`/study/${record.setId}`)}
                           className={cn(
-                            'p-3 flex items-center gap-3 hover:bg-white transition-colors cursor-pointer',
+                            'p-3 flex items-center gap-3 hover:bg-[var(--color-surface)] transition-colors cursor-pointer',
                             idx > 0 && 'border-t border-[var(--color-hairline)]'
                           )}
                         >
-                          <div className="w-8 h-8 rounded-[8px] bg-white flex items-center justify-center text-lg shrink-0">
+                          <div className="w-8 h-8 rounded-[8px] bg-[var(--color-surface)] flex items-center justify-center text-lg shrink-0">
                             {modeInfo.emoji}
                           </div>
                           <div className="flex-1 min-w-0">

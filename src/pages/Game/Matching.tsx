@@ -6,7 +6,8 @@ import { useGameWordSet } from '../../hooks/useGameWordSet';
 import { useStudyRecord } from '../../hooks/useStudyRecord';
 import { shuffleArray } from '../../utils/gameUtils';
 import { playSound, triggerConfetti } from '../../utils/feedback';
-import { THEME_PRESETS } from '../../types/word';
+import { getTheme } from '../../types/word';
+import { useIsDark } from '../../hooks/useIsDark';
 import type { Word } from '../../types/word';
 import type { GameResult } from '../../types/game';
 import { cn } from '../../utils/cn';
@@ -74,7 +75,7 @@ function MatchResultScreen({ result, hearts, onRetry }: MatchResultProps) {
           { label: '남은 하트',   value: '❤️'.repeat(Math.max(0, hearts)) || '없음', color: 'text-[var(--color-danger)]' },
           { label: '최고 콤보',   value: `${result.combo}`,      color: 'text-[var(--color-accent-yellow)]' },
         ].map(stat => (
-          <div key={stat.label} className="flex flex-col items-center bg-white rounded-[14px] p-4 border border-[var(--color-hairline)] gap-1">
+          <div key={stat.label} className="flex flex-col items-center bg-[var(--color-surface)] rounded-[14px] p-4 border border-[var(--color-hairline)] gap-1">
             <span className={`text-[20px] font-bold ${stat.color} text-center leading-tight`}>{stat.value}</span>
             <span className="text-[11px] text-[var(--color-ink-muted)] text-center">{stat.label}</span>
           </div>
@@ -114,7 +115,8 @@ export default function MatchingGame() {
   const { wordSet, updateWordStats, returnPath, restorePending } = useGameWordSet(setId);
   const { addRecord } = useStudyRecord();
 
-  const theme = wordSet ? THEME_PRESETS[wordSet.theme] : THEME_PRESETS.violet;
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
 
   // — Refs —
   const startTimeRef    = useRef(Date.now());
@@ -399,7 +401,7 @@ export default function MatchingGame() {
                   'flex items-center transition-all duration-150 overflow-hidden',
                   isWrong    && 'border-[var(--color-danger)]  bg-[var(--color-danger-subtle)]  text-[var(--color-danger)]  animate-wrong-shake',
                   isSelected && !isWrong && 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)]',
-                  !isSelected && !isWrong && 'border-[var(--color-hairline)] bg-white hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]',
+                  !isSelected && !isWrong && 'border-[var(--color-hairline)] bg-[var(--color-surface)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]',
                 )}
                 style={isSelected ? { borderColor: theme.primary, backgroundColor: theme.cardBg } : {}}
               >
@@ -423,7 +425,7 @@ export default function MatchingGame() {
                   'flex items-center transition-all duration-150 overflow-hidden',
                   isWrong    && 'border-[var(--color-danger)]  bg-[var(--color-danger-subtle)]  text-[var(--color-danger)]  animate-wrong-shake',
                   isSelected && !isWrong && 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]',
-                  !isSelected && !isWrong && 'border-[var(--color-hairline)] bg-white hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]',
+                  !isSelected && !isWrong && 'border-[var(--color-hairline)] bg-[var(--color-surface)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]',
                 )}
                 style={isSelected ? { borderColor: theme.primary } : {}}
               >

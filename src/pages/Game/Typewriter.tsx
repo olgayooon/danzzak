@@ -9,7 +9,8 @@ import { useGameWordSet } from '../../hooks/useGameWordSet';
 import { useStudyRecord } from '../../hooks/useStudyRecord';
 import { shuffleArray } from '../../utils/gameUtils';
 import { playSound, triggerParticleAt, triggerConfetti, triggerGlow } from '../../utils/feedback';
-import { THEME_PRESETS } from '../../types/word';
+import { THEME_PRESETS, getTheme } from '../../types/word';
+import { useIsDark } from '../hooks/useIsDark';
 import type { GameResult } from '../../types/game';
 import type { Word } from '../../types/word';
 import { cn } from '../../utils/cn';
@@ -122,7 +123,8 @@ export default function TypewriterGame() {
   const { wordSet, updateWordStats, returnPath, restorePending } = useGameWordSet(setId);
   const { addRecord } = useStudyRecord();
 
-  const theme = wordSet ? THEME_PRESETS[wordSet.theme] : THEME_PRESETS.violet;
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [state, dispatch] = useReducer(reducer, wordSet?.words ?? [], s => ({
     words: shuffleArray(s),
@@ -349,7 +351,7 @@ export default function TypewriterGame() {
           disabled={state.phase !== 'typing'}
           className={cn(
             'w-full border-2 rounded-[12px] px-4 py-3 text-[18px] font-semibold outline-none transition-all text-center',
-            state.phase === 'typing' && 'border-[var(--color-primary)] bg-white',
+            state.phase === 'typing' && 'border-[var(--color-primary)] bg-[var(--color-surface)]',
             state.phase !== 'typing' && 'border-[var(--color-hairline)] bg-[var(--color-hairline)] text-[var(--color-ink-muted)]',
           )}
         />

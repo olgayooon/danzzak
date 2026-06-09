@@ -9,7 +9,8 @@ import { useStudyRecord } from '../../hooks/useStudyRecord';
 import { useTTS } from '../../hooks/useTTS';
 import { shuffleArray } from '../../utils/gameUtils';
 import { playSound, triggerParticleAt, triggerConfetti, triggerGlow } from '../../utils/feedback';
-import { THEME_PRESETS } from '../../types/word';
+import { getTheme } from '../../types/word';
+import { useIsDark } from '../../hooks/useIsDark';
 import type { GameResult } from '../../types/game';
 import type { Word } from '../../types/word';
 import { cn } from '../../utils/cn';
@@ -110,7 +111,8 @@ export default function FlashcardGame() {
   const { wordSet, updateWordStats, returnPath, restorePending } = useGameWordSet(setId);
   const { addRecord } = useStudyRecord();
 
-  const theme = wordSet ? THEME_PRESETS[wordSet.theme] : THEME_PRESETS.violet;
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
 
   const [state, dispatch] = useReducer(reducer, wordSet?.words ?? [], init);
   const [result, setResult] = useState<GameResult | null>(null);

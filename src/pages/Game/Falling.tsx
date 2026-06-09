@@ -9,7 +9,8 @@ import { useGameWordSet } from '../../hooks/useGameWordSet';
 import { useStudyRecord } from '../../hooks/useStudyRecord';
 import { shuffleArray, generateTermChoices } from '../../utils/gameUtils';
 import { playSound, triggerConfetti, triggerGlow } from '../../utils/feedback';
-import { THEME_PRESETS } from '../../types/word';
+import { getTheme } from '../../types/word';
+import { useIsDark } from '../../hooks/useIsDark';
 import type { GameResult } from '../../types/game';
 import type { Word } from '../../types/word';
 import { cn } from '../../utils/cn';
@@ -27,7 +28,8 @@ export default function FallingGame() {
   const { wordSet, updateWordStats, returnPath, restorePending } = useGameWordSet(setId);
   const { addRecord } = useStudyRecord();
 
-  const theme = wordSet ? THEME_PRESETS[wordSet.theme] : THEME_PRESETS.violet;
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
   const [mobile] = useState(isMobile);
 
   // ── 게임 상태 ──────────────────────────────────────────────────
@@ -321,7 +323,7 @@ export default function FallingGame() {
                   'p-3 rounded-[12px] border-2 text-[14px] font-semibold transition-all active:scale-95',
                   isWrong
                     ? 'border-[var(--color-danger)] bg-[var(--color-danger-subtle)] text-[var(--color-danger)] animate-wrong-shake'
-                    : 'border-[var(--color-hairline)] bg-white hover:border-[var(--color-primary)]',
+                    : 'border-[var(--color-hairline)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]',
                 )}
               >
                 {term}

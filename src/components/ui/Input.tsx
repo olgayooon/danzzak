@@ -17,7 +17,7 @@ export function Input({ label, error, className, id, ...props }: InputProps) {
       <input
         id={id}
         className={cn(
-          'bg-white text-[var(--color-ink)] border-[1.5px] border-[var(--color-hairline)] rounded-[10px] px-3.5 py-2.5 text-[16px] outline-none transition-all duration-150',
+          'bg-[var(--color-surface)] text-[var(--color-ink)] border-[1.5px] border-[var(--color-hairline)] rounded-[10px] px-3.5 py-2.5 text-[16px] outline-none transition-all duration-150',
           'placeholder:text-[var(--color-ink-faint)]',
           'focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-subtle)]',
           error && 'border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:shadow-[0_0_0_3px_var(--color-danger-subtle)]',

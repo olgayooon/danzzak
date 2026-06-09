@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 interface SettingsStore {
-  darkMode: boolean;
+  theme: ThemeMode;
   ttsEnabled: boolean;
   ttsRate: number;
   soundEnabled: boolean;
   particleEnabled: boolean;
-  toggleDarkMode: () => void;
+  setTheme: (v: ThemeMode) => void;
   setTtsEnabled: (v: boolean) => void;
   setTtsRate: (v: number) => void;
   setSoundEnabled: (v: boolean) => void;
@@ -17,12 +19,12 @@ interface SettingsStore {
 export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set) => ({
-      darkMode: false,
+      theme: 'system',
       ttsEnabled: true,
       ttsRate: 1.0,
       soundEnabled: true,
       particleEnabled: true,
-      toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
+      setTheme: (v) => set({ theme: v }),
       setTtsEnabled: (v) => set({ ttsEnabled: v }),
       setTtsRate: (v) => set({ ttsRate: v }),
       setSoundEnabled: (v) => set({ soundEnabled: v }),

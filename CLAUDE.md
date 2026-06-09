@@ -26,7 +26,7 @@ Styling    Tailwind CSS v4
 라우팅     React Router v7
 상태관리   Zustand (전역) + React Query (서버 상태)
 폼         React Hook Form + Zod
-AI / OCR   Google Gemini 1.5 Flash — Vercel Edge Function 경유 (무료: 하루 1500회 / 분당 15회)
+AI / OCR   Google Gemini 2.5 Flash — Vercel Edge Function 경유, REST API v1beta (무료: 하루 1500회 / 분당 15회)
 TTS        Web Speech API (브라우저 내장)
 저장소     localStorage (단어 세트, 학습 기록)
 인쇄       window.print() + @media print CSS
@@ -245,24 +245,28 @@ VITE_MAX_OCR_PER_DAY=10        # OCR 일일 호출 제한
 ```typescript
 // api/ocr.ts — Vercel Edge Function
 // POST /api/ocr
-// Request:  { imageBase64: string, mimeType: string, accessCode: string }
+// Request:  { images: Array<{ imageBase64: string; mimeType: string }>, accessCode: string }
 // Response: { words: Array<{ term: string; definition: string }>, used: number, limit: number, remaining: number }
 // 인증: OCR_ACCESS_CODE 환경변수와 대조
 // 제한: Upstash Redis로 IP별 일일 MAX_PER_DAY회 제한
-// 모델: gemini-1.5-flash (@google/generative-ai 패키지)
+// 모델: gemini-2.5-flash (REST API v1beta, x-goog-api-key 헤더 방식)
+// 이미지: 1~10장, 한 번의 Gemini 요청으로 전체 처리
 ```
 
 **호출 예시 (클라이언트):**
 ```typescript
 // utils/ocr.ts
-export async function extractWordsFromImage(file: File, accessCode: string) {
-  const base64 = await fileToBase64(file);
+export async function extractWordsFromImages(files: File[], accessCode: string) {
+  const images = await Promise.all(files.map(async f => ({
+    imageBase64: await compressImage(f), // 최대 1200px, JPEG 0.85
+    mimeType: 'image/jpeg',
+  })));
   const res = await fetch('/api/ocr', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageBase64: base64, mimeType: file.type, accessCode }),
+    body: JSON.stringify({ images, accessCode }),
   });
-  if (!res.ok) throw new Error('OCR 실패');
+  if (!res.ok) throw new Error(data.message ?? 'OCR 실패');
   return res.json() as Promise<{ words: Word[]; used: number; limit: number; remaining: number }>;
 }
 ```
@@ -455,7 +459,7 @@ const gridClass = {
 - [x] 기본 라우팅 구조
 
 ### Phase 2 — 핵심 차별화 ✅ 완료 (OCR 제외)
-- [ ] OCR 입력 (Claude API + Edge Function) — API 키 필요, 별도 진행
+- [x] OCR 입력 (Gemini 2.5 Flash + Edge Function) — Phase 5에서 완성
 - [x] CSV 업로드
 - [x] 4지선다 게임 (뜻고르기 / 단어고르기 / 랜덤혼합 모드)
 - [x] 빈칸 채우기 게임 (타이핑)
@@ -483,6 +487,19 @@ const gridClass = {
 - [x] 크래싱 게임 오답 시 낙하 위치에서 정답 표시
 - [x] 오답 표시 중 다음 문제 정답 노출 버그 수정 (revealWord 패턴)
 - [x] 타이핑 게임 엔터 후 입력창 포커스 유지 (readOnly 패턴)
+- [x] 모바일 홈 화면 삭제 버튼 항상 표시
+- [x] 입력 페이지 모바일 최적화 (글씨 축소, 탭 레이블 단축)
+
+### Phase 5 — OCR 기능 완성
+- [x] OCR 입력 탭 추가 (이미지 인식 — Gemini 2.5 Flash)
+- [x] 이미지 최대 10장 다중 업로드 (썸네일 그리드 + 개별 삭제)
+- [x] 클라이언트 이미지 압축 (Canvas, 최대 1200px, JPEG 0.85)
+- [x] 접속 코드 인증 (`OCR_ACCESS_CODE`)
+- [x] Upstash Redis IP별 일일 호출 제한 (기본 10회)
+- [x] 오늘 사용 횟수 뱃지 표시 (localStorage 캐시)
+- [x] GEMINI_API_KEY를 x-goog-api-key 헤더로 전달 (URL 노출 방지)
+- [x] MIME 화이트리스트, 이미지 크기 상한(14MB) 검증
+- [x] definition 한국어만 추출, 영어 품사 제외 프롬프트 적용
 
 ---
 

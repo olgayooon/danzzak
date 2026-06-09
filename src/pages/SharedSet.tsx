@@ -5,7 +5,8 @@ import { Button } from '../components/ui/Button';
 import { useWordSet } from '../hooks/useWordSet';
 import { useToast } from '../components/ui/Toast';
 import { decodeWordSetShare } from '../utils/shareWordSet';
-import { THEME_PRESETS } from '../types/word';
+import { getTheme } from '../types/word';
+import { useIsDark } from '../hooks/useIsDark';
 
 export default function SharedSet() {
   const location = useLocation();
@@ -13,6 +14,7 @@ export default function SharedSet() {
   const { createSet } = useWordSet();
   const toast = useToast();
 
+  const isDark = useIsDark();
   const [payload, setPayload] = useState<ReturnType<typeof decodeWordSetShare>>(null);
   const [error, setError] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -38,7 +40,7 @@ export default function SharedSet() {
 
   if (!payload) return null;
 
-  const theme = THEME_PRESETS[payload.theme] ?? THEME_PRESETS.violet;
+  const theme = getTheme((payload.theme as import('../types/word').ThemePreset) ?? 'violet', isDark);
   const preview = showAll ? payload.words : payload.words.slice(0, 6);
 
   function handleAdd() {
@@ -78,7 +80,7 @@ export default function SharedSet() {
       </div>
 
       {/* 단어 미리보기 */}
-      <div className="bg-white rounded-[16px] border border-[var(--color-hairline)] mb-5 overflow-hidden">
+      <div className="bg-[var(--color-surface)] rounded-[16px] border border-[var(--color-hairline)] mb-5 overflow-hidden">
         <p className="text-[12px] font-bold uppercase tracking-wider text-[var(--color-ink-muted)] px-4 py-3 border-b border-[var(--color-hairline)]">
           단어 미리보기
         </p>

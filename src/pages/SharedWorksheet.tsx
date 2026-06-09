@@ -69,7 +69,7 @@ export default function SharedWorksheet() {
         </Button>
       </div>
 
-      <div className="worksheet-container bg-white rounded-[16px] border border-[var(--color-hairline)] p-8 shadow-[0_2px_8px_rgba(124,58,237,0.08)]" style={{ minHeight: '842px' }}>
+      <div className="worksheet-container bg-[var(--color-surface)] rounded-[16px] border border-[var(--color-hairline)] p-8 shadow-[0_2px_8px_rgba(124,58,237,0.08)]" style={{ minHeight: '842px' }}>
         <div className="worksheet-header border-b-2 border-[var(--color-ink)] pb-3 mb-5">
           <div className="flex items-end justify-between gap-4">
             <h2 className="text-[20px] font-extrabold text-[var(--color-ink)]">{config.title || '시험지'}</h2>

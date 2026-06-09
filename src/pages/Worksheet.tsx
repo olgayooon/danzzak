@@ -150,7 +150,7 @@ export default function Worksheet() {
       <div className="flex gap-6 flex-col lg:flex-row">
         {/* 설정 패널 */}
         <div className="no-print w-full lg:w-64 shrink-0 flex flex-col gap-4">
-          <div className="bg-white rounded-[20px] border border-[var(--color-hairline)] p-5">
+          <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] p-5">
             <h2 className="text-[14px] font-bold text-[var(--color-ink)] mb-3">시험지 유형</h2>
             <div className="flex flex-col gap-1">
               {(Object.entries(WORKSHEET_TYPE_INFO) as [WorksheetType, typeof WORKSHEET_TYPE_INFO[WorksheetType]][]).map(([type, info]) => {
@@ -177,7 +177,7 @@ export default function Worksheet() {
             </div>
           </div>
 
-          <div className="bg-white rounded-[20px] border border-[var(--color-hairline)] p-5 flex flex-col gap-3">
+          <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] p-5 flex flex-col gap-3">
             <h2 className="text-[14px] font-bold text-[var(--color-ink)]">설정</h2>
 
             <div>
@@ -204,7 +204,7 @@ export default function Worksheet() {
                         'flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold border transition-all',
                         (config.questionField ?? 'definition') === field
                           ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                          : 'bg-white text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
+                          : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
                       )}
                     >
                       {label}
@@ -221,7 +221,7 @@ export default function Worksheet() {
                   {([1, 2, 3] as const).map(col => (
                     <button key={col} onClick={() => update('columns', col)}
                       className={cn('flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold border transition-all',
-                        config.columns === col ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-white text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
+                        config.columns === col ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
                       )}>
                       {col}단
                     </button>
@@ -236,7 +236,7 @@ export default function Worksheet() {
                 {(['sm', 'md', 'lg'] as const).map(size => (
                   <button key={size} onClick={() => update('fontSize', size)}
                     className={cn('flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold border transition-all',
-                      config.fontSize === size ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-white text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
+                      config.fontSize === size ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
                     )}>
                     {size === 'sm' ? '작게' : size === 'md' ? '보통' : '크게'}
                   </button>
@@ -250,7 +250,7 @@ export default function Worksheet() {
                 {(['normal', 'wide'] as const).map(spacing => (
                   <button key={spacing} onClick={() => update('lineSpacing', spacing)}
                     className={cn('flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold border transition-all',
-                      config.lineSpacing === spacing ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-white text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
+                      config.lineSpacing === spacing ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
                     )}>
                     {spacing === 'normal' ? '보통' : '넓게'}
                   </button>
@@ -296,7 +296,7 @@ export default function Worksheet() {
 
         {/* 시험지 미리보기 */}
         <div
-          className="flex-1 worksheet-container bg-white rounded-[16px] border border-[var(--color-hairline)] p-8 shadow-[0_2px_8px_rgba(124,58,237,0.08)]"
+          className="flex-1 worksheet-container bg-[var(--color-surface)] rounded-[16px] border border-[var(--color-hairline)] p-8 shadow-[0_2px_8px_rgba(124,58,237,0.08)]"
           style={{ minHeight: '842px' }}
         >
           {/* 시험지 헤더 */}

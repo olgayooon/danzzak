@@ -191,7 +191,7 @@ export default function Input() {
 
       <div className="flex flex-col gap-6">
         {/* 제목 & 이모지 */}
-        <div className="bg-white rounded-[20px] border border-[var(--color-hairline)] p-4 sm:p-6">
+        <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] p-4 sm:p-6">
           <h2 className="text-[14px] font-bold text-[var(--color-ink)] mb-3">단어장 정보</h2>
           <div className="flex gap-3 items-end">
             <div className="relative">
@@ -236,7 +236,7 @@ export default function Input() {
         </div>
 
         {/* 입력 방식 탭 */}
-        <div className="bg-white rounded-[20px] border border-[var(--color-hairline)] overflow-hidden">
+        <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] overflow-hidden">
           <div className="flex border-b border-[var(--color-hairline)]">
             {TABS.map(({ key, label, icon: Icon }) => (
               <button

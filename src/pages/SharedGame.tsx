@@ -4,7 +4,8 @@ import { Home, AlertCircle, Play, Trophy } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { useWordSet } from '../hooks/useWordSet';
 import { SHARED_GAME_SESSION_KEY, decodeGameShare } from '../utils/shareGame';
-import { THEME_PRESETS } from '../types/word';
+import { getTheme } from '../types/word';
+import { useIsDark } from '../hooks/useIsDark';
 import { GAME_MODE_INFO } from '../types/game';
 import { generateId } from '../utils/id';
 import { cn } from '../utils/cn';
@@ -24,6 +25,7 @@ export default function SharedGame() {
   const navigate = useNavigate();
   const { addSet } = useWordSet();
 
+  const isDark = useIsDark();
   const [payload, setPayload] = useState<ReturnType<typeof decodeGameShare>>(null);
   const [error, setError]     = useState(false);
   const [nickname, setNickname] = useState('');
@@ -90,7 +92,7 @@ export default function SharedGame() {
 
   if (!payload) return null;
 
-  const theme    = THEME_PRESETS[payload.theme] ?? THEME_PRESETS.violet;
+  const theme = getTheme((payload.theme as import('../types/word').ThemePreset) ?? 'violet', isDark);
   const modeInfo = GAME_MODE_INFO[payload.gameMode];
   const canStart = nickname.trim().length > 0;
 
@@ -117,7 +119,7 @@ export default function SharedGame() {
       </div>
 
       {/* 닉네임 + PIN 입력 */}
-      <div className="bg-white rounded-[16px] border border-[var(--color-hairline)] p-5 mb-5">
+      <div className="bg-[var(--color-surface)] rounded-[16px] border border-[var(--color-hairline)] p-5 mb-5">
         <h2 className="text-[15px] font-bold text-[var(--color-ink)] mb-4">게임 시작 정보</h2>
         <div className="flex flex-col gap-3">
           <div>
@@ -161,7 +163,7 @@ export default function SharedGame() {
 
       {/* 로컬 기록 */}
       {scores.length > 0 && (
-        <div className="bg-white rounded-[16px] border border-[var(--color-hairline)] overflow-hidden">
+        <div className="bg-[var(--color-surface)] rounded-[16px] border border-[var(--color-hairline)] overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-hairline)]">
             <Trophy size={15} className="text-[var(--color-warning)]" />
             <p className="text-[13px] font-bold text-[var(--color-ink)]">이 기기의 기록</p>

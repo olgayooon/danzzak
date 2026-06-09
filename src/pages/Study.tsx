@@ -6,7 +6,8 @@ import { ModeCard } from '../components/games/ModeCard';
 import { useWordSet } from '../hooks/useWordSet';
 import { useToast } from '../components/ui/Toast';
 import { type GameMode } from '../types/game';
-import { THEME_PRESETS } from '../types/word';
+import { THEME_PRESETS, getTheme } from '../types/word';
+import { useIsDark } from '../hooks/useIsDark';
 import { buildWordSetShareUrl } from '../utils/shareWordSet';
 import { buildGameShareUrl } from '../utils/shareGame';
 import { cn } from '../utils/cn';
@@ -85,7 +86,8 @@ export default function Study() {
     );
   }
 
-  const theme = THEME_PRESETS[wordSet.theme];
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet.theme, isDark);
 
   function handleSelectMode(mode: StudyMode) {
     if (mode.disabled) {
@@ -176,7 +178,7 @@ export default function Study() {
           {shareMenuOpen && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setShareMenuOpen(false)} />
-              <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 z-40 bg-white border border-[var(--color-hairline)] rounded-[14px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-y-auto max-h-[60vh] min-w-[200px] max-w-[calc(100vw-32px)] sm:max-w-none animate-fade-in">
+              <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 z-40 bg-[var(--color-surface)] border border-[var(--color-hairline)] rounded-[14px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-y-auto max-h-[60vh] min-w-[200px] max-w-[calc(100vw-32px)] sm:max-w-none animate-fade-in">
                 <button
                   onClick={() => copyUrl(buildWordSetShareUrl(wordSet))}
                   className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-left hover:bg-[var(--color-canvas)] transition-colors"

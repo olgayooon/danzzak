@@ -9,7 +9,8 @@ import { useGameWordSet } from '../../hooks/useGameWordSet';
 import { useStudyRecord } from '../../hooks/useStudyRecord';
 import { shuffleArray } from '../../utils/gameUtils';
 import { playSound, triggerParticleAt, triggerConfetti, triggerGlow } from '../../utils/feedback';
-import { THEME_PRESETS } from '../../types/word';
+import { getTheme } from '../../types/word';
+import { useIsDark } from '../../hooks/useIsDark';
 import type { GameResult } from '../../types/game';
 import type { Word } from '../../types/word';
 import { cn } from '../../utils/cn';
@@ -47,7 +48,8 @@ export default function FillInGame() {
   const { wordSet, updateWordStats, returnPath, restorePending } = useGameWordSet(setId);
   const { addRecord } = useStudyRecord();
 
-  const theme = wordSet ? THEME_PRESETS[wordSet.theme] : THEME_PRESETS.violet;
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
   const [state, dispatch] = useReducer(reducer, wordSet?.words ?? [], init);
   const [result, setResult] = useState<GameResult | null>(null);
   const wrongWordsRef = useRef<Word[]>([]);
@@ -182,7 +184,7 @@ export default function FillInGame() {
               readOnly={!!feedback}
               style={!feedback ? { borderColor: theme.primary } : undefined}
               className={cn(
-                'w-full bg-white border-2 rounded-[14px] px-4 py-4 text-[20px] font-semibold text-center outline-none transition-all',
+                'w-full bg-[var(--color-surface)] border-2 rounded-[14px] px-4 py-4 text-[20px] font-semibold text-center outline-none transition-all',
                 feedback === 'correct' && 'border-[var(--color-success)] bg-[var(--color-success-subtle)] text-[var(--color-success)] animate-correct-pop',
                 feedback === 'wrong'   && 'border-[var(--color-danger)]  bg-[var(--color-danger-subtle)]  text-[var(--color-danger)]  animate-wrong-shake',
               )}

@@ -8,7 +8,8 @@ import { useGameWordSet } from '../../hooks/useGameWordSet';
 import { useStudyRecord } from '../../hooks/useStudyRecord';
 import { shuffleArray } from '../../utils/gameUtils';
 import { playSound, triggerConfetti, triggerGlow } from '../../utils/feedback';
-import { THEME_PRESETS } from '../../types/word';
+import { THEME_PRESETS, getTheme } from '../../types/word';
+import { useIsDark } from '../hooks/useIsDark';
 import type { GameResult } from '../../types/game';
 import type { Word } from '../../types/word';
 import { cn } from '../../utils/cn';
@@ -146,7 +147,8 @@ export default function MissingLettersGame() {
   const { wordSet, updateWordStats, returnPath, restorePending } = useGameWordSet(setId);
   const { addRecord } = useStudyRecord();
 
-  const theme = wordSet ? THEME_PRESETS[wordSet.theme] : THEME_PRESETS.violet;
+  const isDark = useIsDark();
+  const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
 
   const initialState = wordSet?.words ? (() => {
     const words = shuffleArray(wordSet.words);
@@ -345,7 +347,7 @@ export default function MissingLettersGame() {
                   state.phase !== 'playing' && 'cursor-not-allowed',
                   isWrong && state.phase === 'feedback'
                     ? 'border-[var(--color-danger)] bg-[var(--color-danger-subtle)] text-[var(--color-danger)]'
-                    : 'border-[var(--color-primary)] bg-white',
+                    : 'border-[var(--color-primary)] bg-[var(--color-surface)]',
                 )}
               />
             );

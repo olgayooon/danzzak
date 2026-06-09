@@ -32,7 +32,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
       />
       <div
         className={cn(
-          'relative bg-white rounded-[20px] p-8 w-full max-w-md shadow-[0_8px_32px_rgba(0,0,0,0.12),0_32px_64px_rgba(124,58,237,0.10)] animate-slide-in-top',
+          'relative bg-[var(--color-surface)] rounded-[20px] p-8 w-full max-w-md shadow-[0_8px_32px_rgba(0,0,0,0.12),0_32px_64px_rgba(124,58,237,0.10)] animate-slide-in-top',
           className
         )}
       >

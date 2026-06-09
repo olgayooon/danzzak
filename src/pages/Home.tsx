@@ -13,7 +13,8 @@ import {
 import { Button } from '../components/ui/Button';
 import { useWordSet } from '../hooks/useWordSet';
 import type { WordSet, Folder } from '../types/word';
-import { THEME_PRESETS } from '../types/word';
+import { getTheme } from '../types/word';
+import { useIsDark } from '../hooks/useIsDark';
 import { cn } from '../utils/cn';
 
 // ── 폴더 이동 드롭다운 ────────────────────────────────────────────
@@ -38,7 +39,7 @@ function FolderPicker({ folders, currentFolderId, onPick, onClose }: FolderPicke
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-full mt-1 z-50 bg-white border border-[var(--color-hairline)] rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] min-w-[160px] overflow-hidden animate-fade-in"
+      className="absolute right-0 top-full mt-1 z-50 bg-[var(--color-surface)] border border-[var(--color-hairline)] rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] min-w-[160px] overflow-hidden animate-fade-in"
     >
       {currentFolderId && (
         <button
@@ -85,13 +86,14 @@ interface SetCardProps {
 }
 
 function SetCard({ set, folders, onOpen, onDelete, onMove, dragListeners, isDragging }: SetCardProps) {
-  const theme = THEME_PRESETS[set.theme];
+  const isDark = useIsDark();
+  const theme = getTheme(set.theme, isDark);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
     <div
       className={cn(
-        'group relative flex items-center gap-2 bg-white rounded-[14px] border border-[var(--color-hairline)]',
+        'group relative flex items-center gap-2 bg-[var(--color-surface)] rounded-[14px] border border-[var(--color-hairline)]',
         'px-3 py-3 transition-all duration-150',
         isDragging
           ? 'opacity-40 shadow-none'
@@ -248,7 +250,7 @@ function FolderSection({
               }}
               onBlur={commitRename}
               onClick={e => e.stopPropagation()}
-              className="flex-1 min-w-0 bg-white border border-[var(--color-primary)] rounded-[6px] px-2 py-0.5 text-[14px] font-bold text-[var(--color-ink)] outline-none"
+              className="flex-1 min-w-0 bg-[var(--color-surface)] border border-[var(--color-primary)] rounded-[6px] px-2 py-0.5 text-[14px] font-bold text-[var(--color-ink)] outline-none"
             />
           ) : (
             <span className="text-[14px] font-bold text-[var(--color-ink)] truncate">{folder.name}</span>
@@ -288,7 +290,7 @@ function FolderSection({
 
       {/* 단어장 목록 */}
       {(isExpanded || isDraggingAny) && (
-        <div className="border-t border-[var(--color-hairline)] bg-white">
+        <div className="border-t border-[var(--color-hairline)] bg-[var(--color-surface)]">
           {sets.length === 0 && !isOver ? (
             <p className={cn(
               'px-4 py-4 text-[13px] text-center transition-colors',
@@ -353,9 +355,10 @@ function DroppableUncategorized({ children, isDraggingFromFolder }: { children: 
 // ── 드래그 오버레이 미니 카드 ─────────────────────────────────────
 
 function DragPreviewCard({ set }: { set: WordSet }) {
-  const theme = THEME_PRESETS[set.theme];
+  const isDark = useIsDark();
+  const theme = getTheme(set.theme, isDark);
   return (
-    <div className="flex items-center gap-2 bg-white rounded-[14px] border-2 border-[var(--color-primary)] px-3 py-3 shadow-[0_12px_32px_rgba(124,58,237,0.25)] w-[280px] rotate-2">
+    <div className="flex items-center gap-2 bg-[var(--color-surface)] rounded-[14px] border-2 border-[var(--color-primary)] px-3 py-3 shadow-[0_12px_32px_rgba(124,58,237,0.25)] w-[280px] rotate-2">
       <div
         className="w-9 h-9 rounded-[10px] flex items-center justify-center text-lg shrink-0"
         style={{ backgroundColor: theme.cardBg, border: `1px solid ${theme.cardBorder}` }}
@@ -472,7 +475,7 @@ export default function Home() {
           </div>
           <div className="text-center">
             <h1 className="text-[24px] sm:text-[32px] font-extrabold text-[var(--color-ink)] tracking-tight mb-2">
-              DANZZAK에 오신 걸 환영해요!
+              단짝에 오신 걸 환영해요!
             </h1>
             <p className="text-[14px] sm:text-[16px] text-[var(--color-ink-muted)] whitespace-nowrap">
               단어를 입력하면 즉시 퀴즈 게임과 인쇄용 시험지를 만들 수 있어요.
@@ -487,7 +490,7 @@ export default function Home() {
               { icon: <Gamepad2 size={18} />, title: '무료로 모든 기능', desc: '핵심 기능 완전 무료' },
               { icon: <FileText size={18} />, title: '시험지 한 번에', desc: '클릭 몇 번으로 완성' },
             ].map(f => (
-              <div key={f.title} className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-[14px] border border-[var(--color-hairline)] text-center">
+              <div key={f.title} className="flex flex-col items-center gap-1.5 p-3 bg-[var(--color-surface)] rounded-[14px] border border-[var(--color-hairline)] text-center">
                 <div className="text-[var(--color-primary)]">{f.icon}</div>
                 <p className="text-[12px] font-semibold text-[var(--color-ink)]">{f.title}</p>
                 <p className="text-[11px] text-[var(--color-ink-muted)]">{f.desc}</p>
@@ -517,7 +520,7 @@ export default function Home() {
 
         {/* 새 폴더 입력 */}
         {creatingFolder && (
-          <div className="flex items-center gap-2 mb-4 p-3 bg-white rounded-[12px] border-2 border-[var(--color-primary)] shadow-[0_0_0_3px_var(--color-primary-subtle)]">
+          <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--color-surface)] rounded-[12px] border-2 border-[var(--color-primary)] shadow-[0_0_0_3px_var(--color-primary-subtle)]">
             <span className="text-lg">📁</span>
             <input
               ref={newFolderInputRef}
