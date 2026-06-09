@@ -10,7 +10,7 @@ import { getTheme } from '../types/word';
 import { useIsDark } from '../hooks/useIsDark';
 import { generateShareUrl } from '../utils/shareWordSet';
 import { generateGameShareUrl } from '../utils/shareGame';
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { cn } from '../utils/cn';
 
 interface StudyMode {
@@ -116,16 +116,6 @@ export default function Study() {
     } else {
       setSearchParams({ tab: 'study', weakOnly: 'true' });
     }
-  }
-
-  async function copyUrl(url: string) {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast('링크를 복사했어요!', 'success');
-    } catch {
-      toast('링크 복사에 실패했어요.', 'error');
-    }
-    setShareMenuOpen(false);
   }
 
   async function handleShare(key: string, getUrl: () => Promise<string>) {
