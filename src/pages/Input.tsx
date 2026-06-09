@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Type, ChevronDown, FileSpreadsheet } from 'lucide-react';
+import { ArrowRight, Type, ChevronDown, FileSpreadsheet, Camera, Upload } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input as TextInput } from '../components/ui/Input';
 import { WordTable } from '../components/input/WordTable';
@@ -17,12 +17,13 @@ import { cn } from '../utils/cn';
 
 const EMOJI_OPTIONS = ['📚', '🔤', '🌍', '🎓', '⭐', '🔥', '💡', '🎯', '🧠', '📖'];
 
-type Tab = 'paste' | 'manual' | 'csv';
+type Tab = 'paste' | 'manual' | 'csv' | 'ocr';
 
 const TABS: { key: Tab; label: string; icon: typeof Type }[] = [
   { key: 'paste', label: '붙여넣기', icon: Type },
   { key: 'manual', label: '직접 입력', icon: Type },
-  { key: 'csv', label: 'CSV 업로드', icon: FileSpreadsheet },
+  { key: 'csv', label: '파일', icon: FileSpreadsheet },
+  { key: 'ocr', label: '이미지', icon: Camera },
 ];
 
 function makeBlankWord(): Word {
@@ -44,6 +45,21 @@ export default function Input() {
   // 미완성 검사
   const [incompleteModalOpen, setIncompleteModalOpen] = useState(false);
   const [highlightIds, setHighlightIds] = useState<Set<string>>(new Set());
+
+  // OCR
+  const [ocrCode, setOcrCode] = useState('');
+  const [ocrPreview, setOcrPreview] = useState<string | null>(null);
+  const [ocrFile, setOcrFile] = useState<File | null>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrCooldown, setOcrCooldown] = useState(false);
+  const ocrInputRef = useRef<HTMLInputElement>(null);
+
+  const OCR_LIMIT = parseInt(import.meta.env.VITE_MAX_OCR_PER_DAY ?? '10');
+  const ocrStorageKey = `ocr-used:${new Date().toISOString().slice(0, 10)}`;
+  const [ocrUsedToday, setOcrUsedToday] = useState<number>(() => {
+    const stored = localStorage.getItem(ocrStorageKey);
+    return stored ? parseInt(stored) : 0;
+  });
 
   function getIncompleteWords(): Word[] {
     return words.filter(w => {
@@ -113,19 +129,68 @@ export default function Input() {
     // 하이라이트는 유지 — 테이블에서 확인하도록
   }
 
+  function handleOcrFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setOcrFile(file);
+    setOcrPreview(URL.createObjectURL(file));
+  }
+
+  async function handleOcrSubmit() {
+    if (!ocrFile || !ocrCode.trim()) return;
+    setOcrLoading(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(ocrFile);
+      });
+      const res = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mimeType: ocrFile.type, accessCode: ocrCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data.message ?? 'OCR 실패', 'error');
+        return;
+      }
+      const parsed: Word[] = (data.words as { term: string; definition: string }[]).map(w => ({
+        id: generateId(), term: w.term, definition: w.definition, isWeak: false, stats: { correct: 0, wrong: 0 },
+      }));
+      if (parsed.length === 0) {
+        toast('이미지에서 단어를 찾지 못했어요.', 'error');
+        return;
+      }
+      setWords(parsed);
+      setTab('manual');
+      toast(`${parsed.length}개 단어를 인식했어요!`, 'success');
+      const newUsed: number = data.used ?? ocrUsedToday + 1;
+      setOcrUsedToday(newUsed);
+      localStorage.setItem(ocrStorageKey, String(newUsed));
+      setOcrCooldown(true);
+      setTimeout(() => setOcrCooldown(false), 3000);
+    } catch {
+      toast('OCR 처리 중 오류가 발생했어요.', 'error');
+    } finally {
+      setOcrLoading(false);
+    }
+  }
+
   return (
-    <div className="max-w-[720px] mx-auto px-4 py-8">
-      <h1 className="text-[28px] font-extrabold text-[var(--color-ink)] tracking-tight mb-2">
+    <div className="max-w-[720px] mx-auto px-4 py-6">
+      <h1 className="text-[22px] sm:text-[26px] font-extrabold text-[var(--color-ink)] tracking-tight mb-1">
         새 단어장 만들기
       </h1>
-      <p className="text-[15px] text-[var(--color-ink-muted)] mb-8">
+      <p className="text-[13px] text-[var(--color-ink-muted)] mb-6">
         단어를 입력하면 즉시 퀴즈와 시험지를 만들 수 있어요.
       </p>
 
       <div className="flex flex-col gap-6">
         {/* 제목 & 이모지 */}
-        <div className="bg-white rounded-[20px] border border-[var(--color-hairline)] p-6">
-          <h2 className="text-[16px] font-bold text-[var(--color-ink)] mb-4">단어장 정보</h2>
+        <div className="bg-white rounded-[20px] border border-[var(--color-hairline)] p-4 sm:p-6">
+          <h2 className="text-[14px] font-bold text-[var(--color-ink)] mb-3">단어장 정보</h2>
           <div className="flex gap-3 items-end">
             <div className="relative">
               <select
@@ -176,13 +241,13 @@ export default function Input() {
                 key={key}
                 onClick={() => setTab(key)}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-3.5 text-[13px] font-semibold transition-colors',
+                  'flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] sm:text-[13px] font-semibold transition-colors',
                   tab === key
                     ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)] bg-[var(--color-primary-subtle)]'
                     : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                 )}
               >
-                <Icon size={14} />
+                <Icon size={13} />
                 {label}
               </button>
             ))}
@@ -233,6 +298,71 @@ export default function Input() {
                 onParsed={handleCsvParsed}
                 onError={msg => toast(msg, 'error')}
               />
+            )}
+            {tab === 'ocr' && (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-[13px] text-[var(--color-ink-muted)]">
+                    사진을 올리면 AI가 단어를 자동으로 인식해요.
+                  </p>
+                  <div className={cn(
+                    'shrink-0 px-2.5 py-1 rounded-full text-[12px] font-semibold',
+                    ocrUsedToday >= OCR_LIMIT
+                      ? 'bg-[var(--color-danger-subtle)] text-[var(--color-danger)]'
+                      : 'bg-[var(--color-hairline)] text-[var(--color-ink-muted)]'
+                  )}>
+                    오늘 {ocrUsedToday}/{OCR_LIMIT}회
+                  </div>
+                </div>
+                {ocrUsedToday >= OCR_LIMIT && (
+                  <p className="text-[12px] text-[var(--color-danger)]">
+                    오늘 이미지 인식을 모두 사용했어요. 내일 다시 시도해주세요.
+                  </p>
+                )}
+
+                {/* 이미지 업로드 */}
+                <div
+                  onClick={() => ocrInputRef.current?.click()}
+                  className="flex flex-col items-center justify-center gap-3 h-40 border-2 border-dashed border-[var(--color-hairline)] rounded-[14px] cursor-pointer hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all"
+                >
+                  {ocrPreview ? (
+                    <img src={ocrPreview} alt="미리보기" className="h-full w-full object-contain rounded-[12px] p-1" />
+                  ) : (
+                    <>
+                      <Upload size={28} className="text-[var(--color-ink-faint)]" />
+                      <p className="text-[13px] text-[var(--color-ink-muted)]">이미지 클릭하여 업로드</p>
+                      <p className="text-[11px] text-[var(--color-ink-faint)]">JPG, PNG, WEBP 지원</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  ref={ocrInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleOcrFileChange}
+                />
+
+                {/* 접속 코드 */}
+                <div>
+                  <label className="text-[13px] font-semibold text-[var(--color-ink-muted)] mb-1.5 block">접속 코드</label>
+                  <TextInput
+                    id="ocr-code"
+                    value={ocrCode}
+                    onChange={e => setOcrCode(e.target.value)}
+                    placeholder="접속 코드를 입력하세요"
+                    className="w-full"
+                    onKeyDown={e => e.key === 'Enter' && !ocrLoading && !ocrCooldown && ocrFile && handleOcrSubmit()}
+                  />
+                </div>
+
+                <Button
+                  onClick={handleOcrSubmit}
+                  disabled={!ocrFile || !ocrCode.trim() || ocrLoading || ocrCooldown}
+                >
+                  {ocrLoading ? '인식 중...' : ocrCooldown ? '잠시 후 다시 시도하세요' : '단어 인식하기'}
+                </Button>
+              </div>
             )}
           </div>
         </div>
