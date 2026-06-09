@@ -19,7 +19,7 @@ export default async function handler(request: Request) {
     );
   }
 
-  // ② IP 기반 일일 호출 제한 (Vercel KV)
+  // ② IP 기반 일일 호출 제한 (Upstash Redis)
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
   const today = new Date().toISOString().slice(0, 10);
   const kvKey = `ocr:${ip}:${today}`;
@@ -27,8 +27,8 @@ export default async function handler(request: Request) {
   let count = 0;
   try {
     const kvRes = await fetch(
-      `${process.env.KV_REST_API_URL}/get/${kvKey}`,
-      { headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}` } }
+      `${process.env.UPSTASH_REDIS_REST_URL}/get/${kvKey}`,
+      { headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` } }
     );
     const kvData = await kvRes.json();
     count = parseInt(kvData.result ?? '0');
@@ -81,14 +81,11 @@ export default async function handler(request: Request) {
     const cleaned = text.replace(/^```json\s*|^```\s*|```$/gm, '').trim();
     const words = JSON.parse(cleaned);
 
-    // ⑤ KV 카운트 +1 (TTL 25시간)
+    // ⑤ Redis 카운트 +1 (TTL 25시간)
     try {
       await fetch(
-        `${process.env.KV_REST_API_URL}/set/${kvKey}/${count + 1}?ex=90000`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}` },
-        }
+        `${process.env.UPSTASH_REDIS_REST_URL}/set/${kvKey}/${count + 1}/ex/90000`,
+        { headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` } }
       );
     } catch {
       console.warn('KV write failed');

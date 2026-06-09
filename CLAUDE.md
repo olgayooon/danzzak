@@ -227,9 +227,9 @@ pnpm lint             # ESLint 검사
 ```bash
 # .env.local (절대 커밋 금지)
 GEMINI_API_KEY=AI...           # Gemini OCR — Google AI Studio 발급, 서버사이드 전용
-OCR_ACCESS_CODE=danzzak2024    # OCR 접속 코드
-KV_REST_API_URL=...            # Vercel KV REST URL
-KV_REST_API_TOKEN=...          # Vercel KV REST Token
+OCR_ACCESS_CODE=danzzak2024          # OCR 접속 코드
+UPSTASH_REDIS_REST_URL=...           # Upstash Redis REST URL
+UPSTASH_REDIS_REST_TOKEN=...         # Upstash Redis REST Token
 
 # .env (공개 가능)
 VITE_APP_NAME=DANZZAK
@@ -248,7 +248,7 @@ VITE_MAX_OCR_PER_DAY=10        # OCR 일일 호출 제한
 // Request:  { imageBase64: string, mimeType: string, accessCode: string }
 // Response: { words: Array<{ term: string; definition: string }>, used: number, limit: number, remaining: number }
 // 인증: OCR_ACCESS_CODE 환경변수와 대조
-// 제한: Vercel KV로 IP별 일일 MAX_PER_DAY회 제한
+// 제한: Upstash Redis로 IP별 일일 MAX_PER_DAY회 제한
 // 모델: gemini-1.5-flash (@google/generative-ai 패키지)
 ```
 
