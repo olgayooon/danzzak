@@ -227,7 +227,7 @@ pnpm lint             # ESLint 검사
 ```bash
 # .env.local (절대 커밋 금지)
 GEMINI_API_KEY=AI...           # Gemini OCR — Google AI Studio 발급, 서버사이드 전용
-OCR_ACCESS_CODE=danzzak2024          # OCR 접속 코드
+OCR_ACCESS_CODE=...                  # OCR 접속 코드 (Vercel 환경변수에서 설정)
 UPSTASH_REDIS_REST_URL=...           # Upstash Redis REST URL
 UPSTASH_REDIS_REST_TOKEN=...         # Upstash Redis REST Token
 

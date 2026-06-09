@@ -16,6 +16,7 @@ export default async function handler(request: Request) {
   };
 
   // ① 접속 코드 검증
+  const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
   if (!accessCode || accessCode !== process.env.OCR_ACCESS_CODE) {
     return new Response(
       JSON.stringify({ error: 'invalid_code', message: '접속 코드가 올바르지 않아요.' }),
@@ -23,8 +24,26 @@ export default async function handler(request: Request) {
     );
   }
 
+  // ①-b 입력값 검증
+  if (!ALLOWED_MIME.includes(mimeType)) {
+    return new Response(
+      JSON.stringify({ error: 'invalid_mime', message: '지원하지 않는 이미지 형식이에요.' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+  // base64 크기 상한 10MB (base64 인코딩 오버헤드 고려)
+  if (!imageBase64 || imageBase64.length > 14_000_000) {
+    return new Response(
+      JSON.stringify({ error: 'too_large', message: '이미지가 너무 커요. 10MB 이하로 업로드해주세요.' }),
+      { status: 413, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
   // ② IP 기반 일일 호출 제한 (Upstash Redis)
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+  const ip =
+    request.headers.get('x-real-ip') ??
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+    'unknown';
   const today = new Date().toISOString().slice(0, 10);
   const kvKey = `ocr:${ip}:${today}`;
 
@@ -37,7 +56,10 @@ export default async function handler(request: Request) {
     const kvData = await kvRes.json() as { result?: string };
     count = parseInt(kvData.result ?? '0');
   } catch {
-    console.warn('KV read failed, skipping rate limit');
+    return new Response(
+      JSON.stringify({ error: 'service_unavailable', message: '일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요.' }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   // ③ 한도 초과
@@ -106,7 +128,8 @@ export default async function handler(request: Request) {
     );
 
   } catch (err) {
-    console.error('OCR error:', err);
+    const safeMsg = err instanceof Error ? err.message : String(err).slice(0, 200);
+    console.error('OCR error:', safeMsg);
 
     const message = err instanceof SyntaxError
       ? '단어를 인식했지만 형식 변환에 실패했어요. 다시 시도해주세요.'
