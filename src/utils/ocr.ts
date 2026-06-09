@@ -41,12 +41,17 @@ export interface OcrResult {
   remaining: number;
 }
 
-export async function extractWordsFromImage(file: File, accessCode: string): Promise<OcrResult> {
-  const base64 = await compressImage(file);
+export async function extractWordsFromImages(files: File[], accessCode: string): Promise<OcrResult> {
+  const images = await Promise.all(
+    files.map(async file => ({
+      imageBase64: await compressImage(file),
+      mimeType: 'image/jpeg',
+    }))
+  );
   const res = await fetch('/api/ocr', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageBase64: base64, mimeType: 'image/jpeg', accessCode }),
+    body: JSON.stringify({ images, accessCode }),
   });
   const data = await res.json();
   if (!res.ok) throw Object.assign(new Error(data.message ?? 'OCR 실패'), { data });

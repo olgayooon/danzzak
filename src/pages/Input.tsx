@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Type, ChevronDown, FileSpreadsheet, Camera, Upload } from 'lucide-react';
-import { extractWordsFromImage } from '../utils/ocr';
+import { extractWordsFromImages } from '../utils/ocr';
 import { Button } from '../components/ui/Button';
 import { Input as TextInput } from '../components/ui/Input';
 import { WordTable } from '../components/input/WordTable';
@@ -49,8 +49,8 @@ export default function Input() {
 
   // OCR
   const [ocrCode, setOcrCode] = useState('');
-  const [ocrPreview, setOcrPreview] = useState<string | null>(null);
-  const [ocrFile, setOcrFile] = useState<File | null>(null);
+  const [ocrFiles, setOcrFiles] = useState<File[]>([]);
+  const [ocrPreviews, setOcrPreviews] = useState<string[]>([]);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrCooldown, setOcrCooldown] = useState(false);
   const ocrInputRef = useRef<HTMLInputElement>(null);
@@ -131,21 +131,33 @@ export default function Input() {
   }
 
   function handleOcrFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setOcrFile(file);
-    setOcrPreview(URL.createObjectURL(file));
+    const selected = Array.from(e.target.files ?? []).slice(0, 10);
+    if (selected.length === 0) return;
+    setOcrFiles(prev => {
+      const merged = [...prev, ...selected].slice(0, 10);
+      setOcrPreviews(merged.map(f => URL.createObjectURL(f)));
+      return merged;
+    });
+    e.target.value = '';
+  }
+
+  function handleOcrRemove(idx: number) {
+    setOcrFiles(prev => {
+      const next = prev.filter((_, i) => i !== idx);
+      setOcrPreviews(next.map(f => URL.createObjectURL(f)));
+      return next;
+    });
   }
 
   async function handleOcrSubmit() {
-    if (!ocrFile || !ocrCode.trim()) return;
-    if (ocrFile.size >= 5 * 1024 * 1024) {
+    if (ocrFiles.length === 0 || !ocrCode.trim()) return;
+    if (ocrFiles.some(f => f.size >= 5 * 1024 * 1024)) {
       toast('이미지를 압축하는 중이에요...', 'success');
     }
     setOcrLoading(true);
     try {
-      const data = await extractWordsFromImage(ocrFile, ocrCode.trim());
-      const parsed: Word[] = data.words.map(w => ({
+      const data = await extractWordsFromImages(ocrFiles, ocrCode.trim());
+      const parsed: Word[] = data.words.map((w: { term: string; definition: string }) => ({
         id: generateId(), term: w.term, definition: w.definition, isWeak: false, stats: { correct: 0, wrong: 0 },
       }));
       if (parsed.length === 0) {
@@ -311,24 +323,43 @@ export default function Input() {
                 )}
 
                 {/* 이미지 업로드 */}
-                <div
-                  onClick={() => ocrInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center gap-3 h-40 border-2 border-dashed border-[var(--color-hairline)] rounded-[14px] cursor-pointer hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all"
-                >
-                  {ocrPreview ? (
-                    <img src={ocrPreview} alt="미리보기" className="h-full w-full object-contain rounded-[12px] p-1" />
-                  ) : (
-                    <>
-                      <Upload size={28} className="text-[var(--color-ink-faint)]" />
-                      <p className="text-[13px] text-[var(--color-ink-muted)]">이미지 클릭하여 업로드</p>
-                      <p className="text-[11px] text-[var(--color-ink-faint)]">JPG, PNG, WEBP 지원</p>
-                    </>
-                  )}
-                </div>
+                {ocrPreviews.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {ocrPreviews.map((src, idx) => (
+                      <div key={idx} className="relative w-20 h-20">
+                        <img src={src} alt={`이미지 ${idx + 1}`} className="w-full h-full object-cover rounded-[10px] border border-[var(--color-hairline)]" />
+                        <button
+                          onClick={() => handleOcrRemove(idx)}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[var(--color-danger)] text-white rounded-full text-[11px] flex items-center justify-center leading-none"
+                          aria-label="이미지 제거"
+                        >×</button>
+                      </div>
+                    ))}
+                    {ocrFiles.length < 10 && (
+                      <button
+                        onClick={() => ocrInputRef.current?.click()}
+                        className="w-20 h-20 flex flex-col items-center justify-center gap-1 border-2 border-dashed border-[var(--color-hairline)] rounded-[10px] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all text-[var(--color-ink-faint)]"
+                      >
+                        <Upload size={16} />
+                        <span className="text-[10px]">추가</span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => ocrInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center gap-3 h-36 border-2 border-dashed border-[var(--color-hairline)] rounded-[14px] cursor-pointer hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all"
+                  >
+                    <Upload size={28} className="text-[var(--color-ink-faint)]" />
+                    <p className="text-[13px] text-[var(--color-ink-muted)]">이미지 클릭하여 업로드 (최대 10장)</p>
+                    <p className="text-[11px] text-[var(--color-ink-faint)]">JPG, PNG, WEBP 지원</p>
+                  </div>
+                )}
                 <input
                   ref={ocrInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
+                  multiple
                   className="hidden"
                   onChange={handleOcrFileChange}
                 />
@@ -342,13 +373,13 @@ export default function Input() {
                     onChange={e => setOcrCode(e.target.value)}
                     placeholder="접속 코드를 입력하세요"
                     className="w-full"
-                    onKeyDown={e => e.key === 'Enter' && !ocrLoading && !ocrCooldown && ocrFile && handleOcrSubmit()}
+                    onKeyDown={e => e.key === 'Enter' && !ocrLoading && !ocrCooldown && ocrFiles.length > 0 && handleOcrSubmit()}
                   />
                 </div>
 
                 <Button
                   onClick={handleOcrSubmit}
-                  disabled={!ocrFile || !ocrCode.trim() || ocrLoading || ocrCooldown}
+                  disabled={ocrFiles.length === 0 || !ocrCode.trim() || ocrLoading || ocrCooldown}
                 >
                   {ocrLoading ? '인식 중...' : ocrCooldown ? '잠시 후 다시 시도하세요' : '단어 인식하기'}
                 </Button>

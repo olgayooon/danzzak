@@ -1,4 +1,7 @@
 {
+  "buildCommand": "pnpm build",
+  "devCommand": "pnpm dev",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",

@@ -7,9 +7,8 @@ export default async function handler(request: Request) {
     return new Response('Method Not Allowed', { status: 405 });
   }
 
-  const { imageBase64, mimeType, accessCode } = await request.json() as {
-    imageBase64: string;
-    mimeType: string;
+  const { images, accessCode } = await request.json() as {
+    images: { imageBase64: string; mimeType: string }[];
     accessCode: string;
   };
 
@@ -23,18 +22,25 @@ export default async function handler(request: Request) {
   }
 
   // ①-b 입력값 검증
-  if (!ALLOWED_MIME.includes(mimeType)) {
+  if (!Array.isArray(images) || images.length === 0 || images.length > 10) {
     return new Response(
-      JSON.stringify({ error: 'invalid_mime', message: '지원하지 않는 이미지 형식이에요.' }),
+      JSON.stringify({ error: 'invalid_input', message: '이미지는 1~10장만 업로드할 수 있어요.' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
-  // base64 크기 상한 10MB (base64 인코딩 오버헤드 고려)
-  if (!imageBase64 || imageBase64.length > 14_000_000) {
-    return new Response(
-      JSON.stringify({ error: 'too_large', message: '이미지가 너무 커요. 10MB 이하로 업로드해주세요.' }),
-      { status: 413, headers: { 'Content-Type': 'application/json' } }
-    );
+  for (const img of images) {
+    if (!ALLOWED_MIME.includes(img.mimeType)) {
+      return new Response(
+        JSON.stringify({ error: 'invalid_mime', message: '지원하지 않는 이미지 형식이에요.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!img.imageBase64 || img.imageBase64.length > 14_000_000) {
+      return new Response(
+        JSON.stringify({ error: 'too_large', message: '이미지가 너무 커요. 10MB 이하로 업로드해주세요.' }),
+        { status: 413, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
   }
 
   // ② IP 기반 일일 호출 제한 (Upstash Redis)
@@ -80,11 +86,13 @@ export default async function handler(request: Request) {
 규칙:
 - JSON 배열만 반환. 마크다운(\`\`\`json 등) 절대 붙이지 마.
 - 형식: [{"term": "영단어", "definition": "한국어 뜻"}, ...]
-- 여러 단어로 된 표현(예: "make up")도 그대로 포함
-- 뜻에 예문이나 부연설명 있으면 그대로 포함
+- term: 영단어 또는 영어 표현만 포함 (예: "raw", "break down")
+- definition: 한국어 뜻만 포함. 한국어 뜻이 여러 개면 쉼표로 구분 (예: "익히지 않은, 날것의")
+- definition에 영어 품사 표시(adj., v., n., phr., adv. 등) 절대 포함하지 마.
+- definition에 영어 설명문 절대 포함하지 마. 한국어만.
+- 여러 단어로 된 영어 표현(예: "make up", "break down")도 그대로 포함
 - 인식 불확실한 단어는 포함하되 definition 끝에 "?" 추가
-- 영단어-뜻 쌍이 없는 이미지면 [] 반환
-- 한국어 뜻이 없고 영어 설명만 있어도 그대로 포함`;
+- 영단어-뜻 쌍이 없는 이미지면 [] 반환`;
 
     const geminiRes = await fetch(
       'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent',
@@ -97,7 +105,7 @@ export default async function handler(request: Request) {
         body: JSON.stringify({
           contents: [{
             parts: [
-              { inlineData: { mimeType, data: imageBase64 } },
+              ...images.map(img => ({ inlineData: { mimeType: img.mimeType, data: img.imageBase64 } })),
               { text: prompt },
             ],
           }],
