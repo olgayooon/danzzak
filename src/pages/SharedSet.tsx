@@ -17,7 +17,7 @@ export default function SharedSet() {
 
   const isDark = useIsDark();
   const [payload, setPayload] = useState<ReturnType<typeof decodeWordSetShare>>(null);
-  const [error, setError] = useState<string | true>(false);
+  const [error, setError] = useState<string | true | false>(false);
   const [showAll, setShowAll] = useState(false);
   const [added, setAdded] = useState(false);
 
