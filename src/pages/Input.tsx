@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Type, ChevronDown, FileSpreadsheet, Camera, Upload } from 'lucide-react';
+import { extractWordsFromImage } from '../utils/ocr';
 import { Button } from '../components/ui/Button';
 import { Input as TextInput } from '../components/ui/Input';
 import { WordTable } from '../components/input/WordTable';
@@ -138,25 +139,13 @@ export default function Input() {
 
   async function handleOcrSubmit() {
     if (!ocrFile || !ocrCode.trim()) return;
+    if (ocrFile.size >= 5 * 1024 * 1024) {
+      toast('이미지를 압축하는 중이에요...', 'success');
+    }
     setOcrLoading(true);
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(ocrFile);
-      });
-      const res = await fetch('/api/ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64, mimeType: ocrFile.type, accessCode: ocrCode.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast(data.message ?? 'OCR 실패', 'error');
-        return;
-      }
-      const parsed: Word[] = (data.words as { term: string; definition: string }[]).map(w => ({
+      const data = await extractWordsFromImage(ocrFile, ocrCode.trim());
+      const parsed: Word[] = data.words.map(w => ({
         id: generateId(), term: w.term, definition: w.definition, isWeak: false, stats: { correct: 0, wrong: 0 },
       }));
       if (parsed.length === 0) {
@@ -166,13 +155,14 @@ export default function Input() {
       setWords(parsed);
       setTab('manual');
       toast(`${parsed.length}개 단어를 인식했어요!`, 'success');
-      const newUsed: number = data.used ?? ocrUsedToday + 1;
+      const newUsed = data.used ?? ocrUsedToday + 1;
       setOcrUsedToday(newUsed);
       localStorage.setItem(ocrStorageKey, String(newUsed));
       setOcrCooldown(true);
       setTimeout(() => setOcrCooldown(false), 3000);
-    } catch {
-      toast('OCR 처리 중 오류가 발생했어요.', 'error');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'OCR 처리 중 오류가 발생했어요.';
+      toast(msg, 'error');
     } finally {
       setOcrLoading(false);
     }
