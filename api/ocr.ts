@@ -87,7 +87,7 @@ export default async function handler(request: Request) {
 - 한국어 뜻이 없고 영어 설명만 있어도 그대로 포함`;
 
     const geminiRes = await fetch(
-      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent',
       {
         method: 'POST',
         headers: {
