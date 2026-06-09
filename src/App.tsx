@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { NavBar } from './components/NavBar';
 import { ToastProvider } from './components/ui/Toast';
+import { InstallBanner } from './components/InstallBanner';
 import { useTheme } from './hooks/useTheme';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -36,6 +37,7 @@ function AppInner() {
   return (
     <BrowserRouter>
       <NavBar />
+      <InstallBanner />
       <main>
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -55,6 +57,7 @@ function AppInner() {
             <Route path="/worksheet/:setId" element={<Worksheet />} />
             <Route path="/share/worksheet" element={<SharedWorksheet />} />
             <Route path="/shared/set" element={<SharedSet />} />
+            <Route path="/s/:code" element={<SharedSet />} />
             <Route path="/shared/game" element={<SharedGame />} />
             <Route path="/records" element={<Records />} />
             <Route path="*" element={<Home />} />

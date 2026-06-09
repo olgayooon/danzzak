@@ -8,7 +8,7 @@ import { useToast } from '../components/ui/Toast';
 import { type GameMode } from '../types/game';
 import { getTheme } from '../types/word';
 import { useIsDark } from '../hooks/useIsDark';
-import { buildWordSetShareUrl } from '../utils/shareWordSet';
+import { generateShareUrl } from '../utils/shareWordSet';
 import { buildGameShareUrl } from '../utils/shareGame';
 import { cn } from '../utils/cn';
 
@@ -63,6 +63,7 @@ export default function Study() {
   const { sets, setActiveSetId } = useWordSet();
   const toast = useToast();
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [sharingSet, setSharingSet] = useState(false);
 
   const currentTab = (searchParams.get('tab') || 'words') as TabType;
   const weakOnly = searchParams.get('weakOnly') === 'true';
@@ -126,6 +127,22 @@ export default function Study() {
     setShareMenuOpen(false);
   }
 
+  async function handleShareSet() {
+    if (!wordSet || sharingSet) return;
+    setSharingSet(true);
+    try {
+      const url = await generateShareUrl(wordSet);
+      await navigator.clipboard.writeText(url);
+      toast('단어장 링크를 복사했어요!', 'success');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '링크 생성에 실패했어요.';
+      toast(msg, 'error');
+    } finally {
+      setSharingSet(false);
+      setShareMenuOpen(false);
+    }
+  }
+
   const allModes = [...STUDY_CATEGORIES.flatMap(c => c.modes), ...GAME_MODES];
 
   // weakOnly이고 취약단어가 0개면 안내 화면
@@ -180,13 +197,19 @@ export default function Study() {
               <div className="fixed inset-0 z-30" onClick={() => setShareMenuOpen(false)} />
               <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 z-40 bg-[var(--color-surface)] border border-[var(--color-hairline)] rounded-[14px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-y-auto max-h-[60vh] min-w-[200px] max-w-[calc(100vw-32px)] sm:max-w-none animate-fade-in">
                 <button
-                  onClick={() => copyUrl(buildWordSetShareUrl(wordSet))}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-left hover:bg-[var(--color-canvas)] transition-colors"
+                  onClick={handleShareSet}
+                  disabled={sharingSet}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-left hover:bg-[var(--color-canvas)] transition-colors disabled:opacity-60"
                 >
-                  <Link size={15} className="text-[var(--color-primary)]" />
+                  {sharingSet
+                    ? <div className="w-[15px] h-[15px] rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin shrink-0" />
+                    : <Link size={15} className="text-[var(--color-primary)] shrink-0" />
+                  }
                   <div>
                     <p className="font-semibold text-[var(--color-ink)]">단어장 공유</p>
-                    <p className="text-[11px] text-[var(--color-ink-muted)]">받는 사람이 내 단어장에 추가</p>
+                    <p className="text-[11px] text-[var(--color-ink-muted)]">
+                      {sharingSet ? '링크 생성 중...' : '받는 사람이 내 단어장에 추가'}
+                    </p>
                   </div>
                 </button>
                 <div className="h-px bg-[var(--color-hairline)]" />

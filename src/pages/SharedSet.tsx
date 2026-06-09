@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Home, Plus, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { useWordSet } from '../hooks/useWordSet';
@@ -11,29 +11,56 @@ import { useIsDark } from '../hooks/useIsDark';
 export default function SharedSet() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { code } = useParams<{ code?: string }>();
   const { createSet } = useWordSet();
   const toast = useToast();
 
   const isDark = useIsDark();
   const [payload, setPayload] = useState<ReturnType<typeof decodeWordSetShare>>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | true>(false);
   const [showAll, setShowAll] = useState(false);
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
+    // /s/:code — 서버에서 조회
+    if (code) {
+      fetch(`/api/share?code=${encodeURIComponent(code)}`)
+        .then(async res => {
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({})) as { message?: string };
+            setError(data.message ?? '링크가 만료됐거나 존재하지 않아요.');
+            return;
+          }
+          const data = await res.json() as { title: string; words: { term: string; definition: string }[] };
+          setPayload({ title: data.title, emoji: '📚', theme: 'violet', words: data.words });
+        })
+        .catch(() => setError(true));
+      return;
+    }
+    // /shared/set#hash — 기존 인코딩 방식
     const hash = location.hash.slice(1);
     if (!hash) { setError(true); return; }
     const p = decodeWordSetShare(hash);
     if (!p) { setError(true); return; }
     setPayload(p);
-  }, [location.hash]);
+  }, [code, location.hash]);
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
         <AlertCircle size={40} className="text-[var(--color-danger)]" />
-        <p className="text-[16px] font-semibold text-[var(--color-ink)]">링크가 올바르지 않아요.</p>
+        <p className="text-[16px] font-semibold text-[var(--color-ink)]">
+          {typeof error === 'string' ? error : '링크가 올바르지 않아요.'}
+        </p>
         <Button variant="secondary" onClick={() => navigate('/')}>홈으로</Button>
+      </div>
+    );
+  }
+
+  if (!payload && !error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin" />
       </div>
     );
   }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Printer, Share2, Check, Pencil, Eye, FileDown } from 'lucide-react';
+import { ArrowLeft, Printer, Share2, Check, Pencil, Eye, FileDown, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -65,6 +65,8 @@ export default function Worksheet() {
   const [editedTitle, setEditedTitle] = useState(config.title);
   const [editedWords, setEditedWords] = useState<Word[]>(wordSet?.words ?? []);
   const [copied, setCopied] = useState(false);
+  const [typeOpen, setTypeOpen] = useState(true);
+  const [editOpen, setEditOpen] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -150,35 +152,52 @@ export default function Worksheet() {
       <div className="flex gap-6 flex-col lg:flex-row">
         {/* 설정 패널 */}
         <div className="no-print w-full lg:w-64 shrink-0 flex flex-col gap-4">
-          <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] p-5">
-            <h2 className="text-[14px] font-bold text-[var(--color-ink)] mb-3">시험지 유형</h2>
-            <div className="flex flex-col gap-1">
-              {(Object.entries(WORKSHEET_TYPE_INFO) as [WorksheetType, typeof WORKSHEET_TYPE_INFO[WorksheetType]][]).map(([type, info]) => {
-                const available = AVAILABLE_TYPES.includes(type);
-                return (
-                  <button
-                    key={type}
-                    onClick={() => available && update('type', type)}
-                    disabled={!available}
-                    className={cn(
-                      'flex items-center gap-3 p-2.5 rounded-[10px] text-left transition-all',
-                      config.type === type && available ? 'bg-[var(--color-primary-subtle)] border border-[var(--color-primary)]' : '',
-                      available ? 'hover:bg-[var(--color-canvas)] cursor-pointer' : 'opacity-40 cursor-not-allowed'
-                    )}
-                  >
-                    <span className="text-lg">{info.emoji}</span>
-                    <div>
-                      <p className="text-[13px] font-semibold text-[var(--color-ink)]">{info.label}</p>
-                      {!available && <p className="text-[10px] text-[var(--color-ink-faint)]">준비중</p>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+          {/* 시험지 유형 */}
+          <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] overflow-hidden">
+            <button
+              onClick={() => setTypeOpen(v => !v)}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-[var(--color-canvas)] transition-colors"
+            >
+              <h2 className="text-[14px] font-bold text-[var(--color-ink)]">시험지 유형</h2>
+              {typeOpen ? <ChevronUp size={16} className="text-[var(--color-ink-muted)]" /> : <ChevronDown size={16} className="text-[var(--color-ink-muted)]" />}
+            </button>
+            {typeOpen && (
+              <div className="px-5 pb-4 flex flex-col gap-1">
+                {(Object.entries(WORKSHEET_TYPE_INFO) as [WorksheetType, typeof WORKSHEET_TYPE_INFO[WorksheetType]][]).map(([type, info]) => {
+                  const available = AVAILABLE_TYPES.includes(type);
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => available && update('type', type)}
+                      disabled={!available}
+                      className={cn(
+                        'flex items-center gap-3 p-2.5 rounded-[10px] text-left transition-all',
+                        config.type === type && available ? 'bg-[var(--color-primary-subtle)] border border-[var(--color-primary)]' : '',
+                        available ? 'hover:bg-[var(--color-canvas)] cursor-pointer' : 'opacity-40 cursor-not-allowed'
+                      )}
+                    >
+                      <span className="text-lg">{info.emoji}</span>
+                      <div>
+                        <p className="text-[13px] font-semibold text-[var(--color-ink)]">{info.label}</p>
+                        {!available && <p className="text-[10px] text-[var(--color-ink-faint)]">준비중</p>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] p-5 flex flex-col gap-3">
-            <h2 className="text-[14px] font-bold text-[var(--color-ink)]">설정</h2>
+          {/* 시험지 편집 */}
+          <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] overflow-hidden">
+            <button
+              onClick={() => setEditOpen(v => !v)}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-[var(--color-canvas)] transition-colors"
+            >
+              <h2 className="text-[14px] font-bold text-[var(--color-ink)]">시험지 편집</h2>
+              {editOpen ? <ChevronUp size={16} className="text-[var(--color-ink-muted)]" /> : <ChevronDown size={16} className="text-[var(--color-ink-muted)]" />}
+            </button>
+            <div className={cn('px-5 pb-5 flex flex-col gap-3', editOpen ? 'block' : 'hidden')}>
 
             <div>
               <label className="text-[11px] font-semibold text-[var(--color-ink-muted)] mb-1.5 block uppercase tracking-wide">제목</label>
@@ -281,6 +300,7 @@ export default function Worksheet() {
                 />
               </div>
             )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">

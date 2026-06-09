@@ -37,7 +37,11 @@ export default function SharedWorksheet() {
     if (!hash) { setError(true); return; }
     const payload = decodeSharePayload(hash);
     if (!payload) { setError(true); return; }
-    setData(payload);
+    // id가 없는 신버전 payload에 임시 id 부여
+    const words = payload.words.map((w, i) =>
+      'id' in w ? w as Word : { ...(w as object), id: String(i), isWeak: false, stats: { correct: 0, wrong: 0 } } as Word
+    );
+    setData({ ...payload, words });
   }, [location.hash]);
 
   if (error) {
