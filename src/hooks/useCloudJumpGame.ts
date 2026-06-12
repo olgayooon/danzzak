@@ -304,10 +304,15 @@ export function useCloudJumpGame(
     const canvas = canvasRef.current;
     if (!canvas || words.length < 4) return;
 
+    // 배경 그라디언트 캐시 (매 프레임 생성 방지)
+    let cachedGrad: CanvasGradient | null = null;
+    let cachedGradH = 0;
+
     // Canvas 크기 초기화
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight - 56;
+      cachedGrad = null; // 크기 변경 시 그라디언트 재생성
       if (!gsRef.current) {
         gsRef.current = initGS(wordsRef.current, canvas.width, canvas.height);
         setHud({ lives: MAX_LIVES, score: 0, combo: 0, phase: 'playing', comboMessage: null, quiz: null });
@@ -346,7 +351,12 @@ export function useCloudJumpGame(
     canvas.addEventListener('touchend', onTouchEnd);
 
     // ── 게임 루프 ─────────────────────────────────────────────
-    function loop() {
+    let lastTimestamp = 0;
+    function loop(timestamp: number) {
+      // 델타 타임 (60fps 기준 정규화, 최대 2배 캡 — 탭 전환 후 복귀 시 튐 방지)
+      const dt = lastTimestamp ? Math.min((timestamp - lastTimestamp) / 16.667, 2) : 1;
+      lastTimestamp = timestamp;
+
       const gs = gsRef.current;
       if (!gs) { rafRef.current = requestAnimationFrame(loop); return; }
       const ctx = canvas!.getContext('2d');
@@ -356,7 +366,7 @@ export function useCloudJumpGame(
 
       // ── update ─────────────────────────────────────────────
       if (gs.phase === 'returning') {
-        gs.returningFrames += 1;
+        gs.returningFrames += dt;
         const t = Math.min(gs.returningFrames / RETURN_FRAMES, 1);
         const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
         gs.player.y = gs.returningFromY + (gs.checkpointY - gs.returningFromY) * ease;
@@ -375,12 +385,12 @@ export function useCloudJumpGame(
         const right = keysRef.current.right || touchRef.current.right;
         if (left) gs.player.vx = -MOVE_SPEED;
         else if (right) gs.player.vx = MOVE_SPEED;
-        else gs.player.vx *= 0.8;
+        else gs.player.vx *= Math.pow(0.8, dt); // 프레임률 독립적 감속
 
-        // 물리
-        gs.player.vy += GRAVITY;
-        gs.player.x += gs.player.vx;
-        gs.player.y += gs.player.vy;
+        // 물리 (델타 타임 적용)
+        gs.player.vy += GRAVITY * dt;
+        gs.player.x += gs.player.vx * dt;
+        gs.player.y += gs.player.vy * dt;
 
         // X 벽 통과
         if (gs.player.x > W + PLAYER_RADIUS) gs.player.x = -PLAYER_RADIUS;
@@ -389,7 +399,7 @@ export function useCloudJumpGame(
         // 구름 충돌 (낙하 중일 때만)
         if (gs.player.vy > 0) {
           const pBottom = gs.player.y + PLAYER_RADIUS;
-          const prevBottom = pBottom - gs.player.vy;
+          const prevBottom = pBottom - gs.player.vy * dt;
 
           for (let ci = 0; ci < gs.clouds.length; ci++) {
             const cloud = gs.clouds[ci];
@@ -507,11 +517,14 @@ export function useCloudJumpGame(
       // ── draw ───────────────────────────────────────────────
       const toSY = (wy: number) => wy - gs.cameraY;
 
-      // 배경 그라디언트
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, '#55b3ff');
-      grad.addColorStop(1, '#c5e1ff');
-      ctx.fillStyle = grad;
+      // 배경 그라디언트 (캐시 — 높이가 바뀔 때만 재생성)
+      if (!cachedGrad || cachedGradH !== H) {
+        cachedGrad = ctx.createLinearGradient(0, 0, 0, H);
+        cachedGrad.addColorStop(0, '#55b3ff');
+        cachedGrad.addColorStop(1, '#c5e1ff');
+        cachedGradH = H;
+      }
+      ctx.fillStyle = cachedGrad;
       ctx.fillRect(0, 0, W, H);
 
       // 구름
