@@ -84,6 +84,7 @@ export default function SpeedQuizGame() {
     advancingRef.current = false;
     if (!running || !!feedback) return;
     setQuestionTimeLeft(QUESTION_TIME);
+    setTimeout(() => inputRef.current?.focus(), 50);
   }, [index, running]);
 
   // 문항 타이머 감소 — 의존성 배열 명시로 불필요한 재실행 방지

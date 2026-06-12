@@ -191,6 +191,12 @@ export default function MissingLettersGame() {
 
   const currentWord = state.words[state.index];
 
+  // 문제 바뀔 때 첫 번째 빈칸에 자동 포커스
+  useEffect(() => {
+    if (state.phase !== 'playing' || state.missingIndices.length === 0) return;
+    setTimeout(() => inputRefs.current.get(state.missingIndices[0])?.focus(), 50);
+  }, [state.index, state.phase]);
+
   useEffect(() => {
     if (state.phase === 'done' && !result && wordSet) {
       const gameResult: GameResult = {
