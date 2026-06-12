@@ -1,4 +1,4 @@
-import { useState, useReducer, useEffect, useRef, useMemo } from 'react';
+import { useState, useReducer, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
@@ -11,7 +11,6 @@ import { shuffleArray, generateChoices } from '../../utils/gameUtils';
 import { playSound, triggerParticleAt, triggerConfetti, triggerGlow } from '../../utils/feedback';
 import { getTheme } from '../../types/word';
 import { useIsDark } from '../../hooks/useIsDark';
-import { readSharedGameSession } from '../../utils/shareGame';
 import type { GameResult } from '../../types/game';
 import type { Word } from '../../types/word';
 import { cn } from '../../utils/cn';
@@ -50,12 +49,7 @@ export default function MultipleChoiceGame() {
   const isDark = useIsDark();
   const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
 
-  const sharedQuestionType = useMemo(() => {
-    if (!setId?.startsWith('_shared_')) return null;
-    return readSharedGameSession()?.questionType ?? null;
-  }, [setId]);
-
-  const [questionMode, setQuestionMode] = useState<'term' | 'definition' | 'mixed' | null>(sharedQuestionType ?? null);
+  const [questionMode, setQuestionMode] = useState<'term' | 'definition' | 'mixed' | null>(null);
   const [initialState] = useState(() => init(wordSet?.words ?? []));
   const [state, dispatch] = useReducer(reducer, initialState);
   const [result, setResult] = useState<GameResult | null>(null);

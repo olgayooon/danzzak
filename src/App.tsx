@@ -19,10 +19,7 @@ const CloudJumpGame = lazy(() => import('./pages/Game/CloudJump'));
 const TypewriterGame = lazy(() => import('./pages/Game/Typewriter'));
 const MissingLettersGame = lazy(() => import('./pages/Game/MissingLetters'));
 const Worksheet = lazy(() => import('./pages/Worksheet'));
-const SharedWorksheet = lazy(() => import('./pages/SharedWorksheet'));
 const SharedSet = lazy(() => import('./pages/SharedSet'));
-const SharedGame = lazy(() => import('./pages/SharedGame'));
-const ShortLink = lazy(() => import('./pages/ShortLink'));
 const Records = lazy(() => import('./pages/Records'));
 
 function PageLoader() {
@@ -56,10 +53,8 @@ function AppInner() {
             <Route path="/game/typewriter/:setId" element={<TypewriterGame />} />
             <Route path="/game/missing-letters/:setId" element={<MissingLettersGame />} />
             <Route path="/worksheet/:setId" element={<Worksheet />} />
-            <Route path="/share/worksheet" element={<SharedWorksheet />} />
             <Route path="/shared/set" element={<SharedSet />} />
-            <Route path="/s/:code" element={<ShortLink />} />
-            <Route path="/shared/game" element={<SharedGame />} />
+            <Route path="/s/:code" element={<SharedSet />} />
             <Route path="/records" element={<Records />} />
             <Route path="*" element={<Home />} />
           </Routes>

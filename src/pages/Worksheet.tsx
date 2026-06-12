@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Printer, Share2, Check, Pencil, Eye, FileDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Printer, Pencil, Eye, FileDown, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -23,7 +23,6 @@ import { useToast } from '../components/ui/Toast';
 import type { WorksheetConfig, WorksheetType } from '../types/worksheet';
 import { WORKSHEET_TYPE_INFO } from '../types/worksheet';
 import { shuffleArray } from '../utils/gameUtils';
-import { buildShareUrl } from '../utils/shareWorksheet';
 import type { Word } from '../types/word';
 import { cn } from '../utils/cn';
 
@@ -64,8 +63,7 @@ export default function Worksheet() {
   const [editMode, setEditMode] = useState(false);
   const [editedTitle, setEditedTitle] = useState(config.title);
   const [editedWords, setEditedWords] = useState<Word[]>(wordSet?.words ?? []);
-  const [copied, setCopied] = useState(false);
-  const [typeOpen, setTypeOpen] = useState(true);
+const [typeOpen, setTypeOpen] = useState(true);
   const [editOpen, setEditOpen] = useState(true);
 
   const sensors = useSensors(
@@ -113,19 +111,8 @@ export default function Worksheet() {
     setEditedWords(words => words.map(w => w.id === id ? { ...w, [field]: value } : w));
   }
 
-  async function handleShare() {
-    const url = buildShareUrl({ config, words: displayWords, setTitle: wordSet!.title });
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast('링크를 복사했어요!', 'success');
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast('링크 복사에 실패했어요.', 'error');
-    }
-  }
 
-  const fontSize = config.fontSize;
+const fontSize = config.fontSize;
   const lineSpacing = config.lineSpacing;
   const cols = config.type === 'multiple-choice' ? 1 : config.columns;
 
@@ -307,10 +294,6 @@ export default function Worksheet() {
             <div className="flex gap-2">
               <Button size="md" onClick={() => window.print()} className="flex-1">
                 <Printer size={15} /> 인쇄
-              </Button>
-              <Button size="md" variant="secondary" onClick={handleShare} className="flex-1">
-                {copied ? <Check size={15} /> : <Share2 size={15} />}
-                {copied ? '복사!' : '공유'}
               </Button>
             </div>
             <Button

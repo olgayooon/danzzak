@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RotateCcw, Home, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { SharedScoreSaver } from './SharedScoreSaver';
 import type { GameResult } from '../../types/game';
 import { GAME_MODE_INFO } from '../../types/game';
 import { calcAccuracy } from '../../hooks/useStudyRecord';
@@ -96,9 +95,6 @@ export function ResultScreen({ result, onRetry }: ResultScreenProps) {
         </Button>
       </div>
 
-      {result.setId.startsWith('_shared_') && (
-        <SharedScoreSaver result={result} />
-      )}
     </div>
   );
 }

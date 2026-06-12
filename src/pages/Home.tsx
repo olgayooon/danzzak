@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus, BookOpen, Gamepad2, FileText, Trash2, ArrowRight,
   ChevronDown, FolderPlus, Folder as FolderIcon,
-  Pencil, Check, X, GripVertical,
+  Pencil, Check, X, GripVertical, Link,
 } from 'lucide-react';
 import {
   DndContext, DragOverlay, PointerSensor,
@@ -12,6 +12,8 @@ import {
 } from '@dnd-kit/core';
 import { Button } from '../components/ui/Button';
 import { useWordSet } from '../hooks/useWordSet';
+import { useToast } from '../components/ui/Toast';
+import { generateShareUrl } from '../utils/shareWordSet';
 import type { WordSet, Folder } from '../types/word';
 import { getTheme } from '../types/word';
 import { useIsDark } from '../hooks/useIsDark';
@@ -80,12 +82,14 @@ interface SetCardProps {
   onOpen: () => void;
   onDelete: (e: React.MouseEvent) => void;
   onMove: (folderId: string | null) => void;
+  onShare: (e: React.MouseEvent) => void;
+  sharingId?: string | null;
   /** useDraggable에서 받은 listeners — drag handle에 부착 */
   dragListeners?: Record<string, unknown>;
   isDragging?: boolean;
 }
 
-function SetCard({ set, folders, onOpen, onDelete, onMove, dragListeners, isDragging }: SetCardProps) {
+function SetCard({ set, folders, onOpen, onDelete, onMove, onShare, sharingId, dragListeners, isDragging }: SetCardProps) {
   const isDark = useIsDark();
   const theme = getTheme(set.theme, isDark);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -147,6 +151,17 @@ function SetCard({ set, folders, onOpen, onDelete, onMove, dragListeners, isDrag
           )}
         </div>
         <button
+          onClick={onShare}
+          aria-label="단어장 공유"
+          disabled={sharingId === set.id}
+          className="p-1.5 rounded-[8px] text-[var(--color-ink-faint)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)] transition-all disabled:opacity-50"
+        >
+          {sharingId === set.id
+            ? <div className="w-3 h-3 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin" />
+            : <Link size={13} />
+          }
+        </button>
+        <button
           onClick={onDelete}
           aria-label="단어장 삭제"
           className="p-1.5 rounded-[8px] text-[var(--color-ink-faint)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)] transition-all"
@@ -187,13 +202,15 @@ interface FolderSectionProps {
   onOpenSet: (set: WordSet) => void;
   onDeleteSet: (e: React.MouseEvent, id: string) => void;
   onMoveSet: (setId: string, folderId: string | null) => void;
+  onShareSet: (e: React.MouseEvent, set: WordSet) => void;
+  sharingId: string | null;
   onRenameFolder: (id: string, name: string) => void;
   onDeleteFolder: (id: string) => void;
 }
 
 function FolderSection({
   folder, sets, allFolders, isExpanded, isDraggingAny,
-  onToggle, onOpenSet, onDeleteSet, onMoveSet, onRenameFolder, onDeleteFolder,
+  onToggle, onOpenSet, onDeleteSet, onMoveSet, onShareSet, sharingId, onRenameFolder, onDeleteFolder,
 }: FolderSectionProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `folder-${folder.id}` });
 
@@ -310,6 +327,8 @@ function FolderSection({
                   onOpen={() => onOpenSet(set)}
                   onDelete={e => onDeleteSet(e, set.id)}
                   onMove={fid => onMoveSet(set.id, fid)}
+                  onShare={e => onShareSet(e, set)}
+                  sharingId={sharingId}
                 />
               ))}
               {isOver && sets.length > 0 && (
@@ -382,6 +401,8 @@ export default function Home() {
     setActiveSetId, deleteSet,
     createFolder, updateFolder, deleteFolder, moveSetToFolder,
   } = useWordSet();
+  const toast = useToast();
+  const [sharingId, setSharingId] = useState<string | null>(null);
 
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => new Set(folders.map(f => f.id)));
   const [activeSetId, setActiveDragSetId] = useState<string | null>(null);
@@ -453,6 +474,22 @@ export default function Home() {
     if (trimmed) createFolder(trimmed);
     setCreatingFolder(false);
     setNewFolderName('');
+  }
+
+  async function handleShareSet(e: React.MouseEvent, set: WordSet) {
+    e.stopPropagation();
+    if (sharingId) return;
+    setSharingId(set.id);
+    try {
+      const url = await generateShareUrl(set);
+      await navigator.clipboard.writeText(url);
+      toast('링크를 복사했어요!', 'success');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '링크 생성에 실패했어요.';
+      toast(msg, 'error');
+    } finally {
+      setSharingId(null);
+    }
   }
 
   function handleRenameFolder(id: string, name: string) {
@@ -572,6 +609,8 @@ export default function Home() {
                 onOpenSet={handleOpenSet}
                 onDeleteSet={handleDeleteSet}
                 onMoveSet={moveSetToFolder}
+                onShareSet={handleShareSet}
+                sharingId={sharingId}
                 onRenameFolder={handleRenameFolder}
                 onDeleteFolder={deleteFolder}
               />
@@ -595,6 +634,8 @@ export default function Home() {
                         onOpen={() => handleOpenSet(set)}
                         onDelete={e => handleDeleteSet(e, set.id)}
                         onMove={fid => moveSetToFolder(set.id, fid)}
+                        onShare={e => handleShareSet(e, set)}
+                        sharingId={sharingId}
                       />
                     ))}
                   </div>
