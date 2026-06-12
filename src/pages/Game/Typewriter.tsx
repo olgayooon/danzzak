@@ -287,6 +287,7 @@ export default function TypewriterGame() {
             <button
               key={d}
               onClick={() => {
+                setDifficulty(d);
                 exposeDurationRef.current = EXPOSE_DURATION[d];
                 dispatch({ type: 'RESET', words: wordSet!.words });
                 setExposing(true);
