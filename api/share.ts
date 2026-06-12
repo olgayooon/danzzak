@@ -5,14 +5,14 @@ const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
 const TTL = 60 * 60 * 24 * 30; // 30일
 const MAX_WORDS = 200;
 
-function redis(path: string, method = 'GET', body?: unknown) {
-  return fetch(`${REDIS_URL}${path}`, {
-    method,
+function redis(commands: unknown[]) {
+  return fetch(REDIS_URL, {
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${REDIS_TOKEN}`,
       'Content-Type': 'application/json',
     },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    body: JSON.stringify(commands),
   });
 }
 
@@ -37,7 +37,7 @@ export default async function handler(request: Request) {
       return json({ error: 'invalid_code', message: '잘못된 코드예요.' }, 400);
     }
 
-    const res = await redis(`/get/share:${code}`);
+    const res = await redis(['GET', `share:${code}`]);
     const { result } = await res.json() as { result: string | null };
     if (!result) {
       return json({ error: 'not_found', message: '링크가 만료됐거나 존재하지 않아요.' }, 404);
@@ -72,7 +72,7 @@ export default async function handler(request: Request) {
     let code = '';
     for (let i = 0; i < 3; i++) {
       const candidate = randomCode();
-      const check = await redis(`/get/share:${candidate}`);
+      const check = await redis(['GET', `share:${candidate}`]);
       const { result } = await check.json() as { result: string | null };
       if (!result) { code = candidate; break; }
     }
@@ -80,9 +80,8 @@ export default async function handler(request: Request) {
       return json({ error: 'collision', message: '잠시 후 다시 시도해주세요.' }, 503);
     }
 
-    // payload 전체를 그대로 저장 (단어장·게임 공통)
     const value = JSON.stringify({ ...payload, title: (payload.title as string).trim() });
-    await redis(`/set/share:${code}`, 'POST', [value, 'EX', TTL]);
+    await redis(['SET', `share:${code}`, value, 'EX', TTL]);
 
     const origin = url.origin.includes('localhost') ? url.origin : 'https://danzzak.vercel.app';
     return json({ code, url: `${origin}/s/${code}` }, 201);
