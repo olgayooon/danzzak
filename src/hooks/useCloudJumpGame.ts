@@ -6,8 +6,8 @@ import { shuffleArray, generateChoices } from '../utils/gameUtils';
 import { playSound } from '../utils/feedback';
 
 // ── 상수 ────────────────────────────────────────────────────────
-const GRAVITY = 0.2;
-const JUMP_FORCE = -13;
+const GRAVITY = 0.35;
+const JUMP_FORCE = -15;
 const PLAYER_RADIUS = 18;
 const CLOUD_GAP_Y = 90;
 const CLOUD_HEIGHT = 20;

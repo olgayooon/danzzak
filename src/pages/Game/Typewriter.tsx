@@ -7,6 +7,7 @@ import { ResultScreen } from '../../components/games/ResultScreen';
 import { AnswerReveal } from '../../components/games/AnswerReveal';
 import { useGameWordSet } from '../../hooks/useGameWordSet';
 import { useStudyRecord } from '../../hooks/useStudyRecord';
+import { useTTS } from '../../hooks/useTTS';
 import { shuffleArray } from '../../utils/gameUtils';
 import { playSound, triggerParticleAt, triggerConfetti, triggerGlow } from '../../utils/feedback';
 import { getTheme } from '../../types/word';
@@ -125,6 +126,7 @@ export default function TypewriterGame() {
 
   const isDark = useIsDark();
   const theme = getTheme(wordSet?.theme ?? 'violet', isDark);
+  const { speak } = useTTS();
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [state, dispatch] = useReducer(reducer, wordSet?.words ?? [], s => ({
     words: shuffleArray(s),
@@ -153,6 +155,7 @@ export default function TypewriterGame() {
   // 단어 노출 타이머 — gameStarted 이후에만 동작
   useEffect(() => {
     if (!gameStarted || state.phase !== 'exposing' || !exposing) return;
+    if (currentWord) speak(currentWord.term);
     const id = setTimeout(() => {
       setExposing(false);
       dispatch({ type: 'START_TYPING', exposeDuration: exposeDurationRef.current });
