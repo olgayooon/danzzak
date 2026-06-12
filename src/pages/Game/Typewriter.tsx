@@ -150,16 +150,16 @@ export default function TypewriterGame() {
 
   const currentWord = state.words[state.index];
 
-  // 단어 노출 타이머
+  // 단어 노출 타이머 — gameStarted 이후에만 동작
   useEffect(() => {
-    if (state.phase !== 'exposing' || !exposing) return;
+    if (!gameStarted || state.phase !== 'exposing' || !exposing) return;
     const id = setTimeout(() => {
       setExposing(false);
       dispatch({ type: 'START_TYPING', exposeDuration: exposeDurationRef.current });
       setTimeout(() => inputRef.current?.focus(), 50);
     }, exposeDurationRef.current);
     return () => clearTimeout(id);
-  }, [state.phase, exposing]);
+  }, [gameStarted, state.phase, exposing]);
 
   // 게임 종료 감지
   useEffect(() => {
@@ -287,8 +287,9 @@ export default function TypewriterGame() {
             <button
               key={d}
               onClick={() => {
-                setDifficulty(d);
                 exposeDurationRef.current = EXPOSE_DURATION[d];
+                dispatch({ type: 'RESET', words: wordSet!.words });
+                setExposing(true);
                 setGameStarted(true);
               }}
               className={cn(

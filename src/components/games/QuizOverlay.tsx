@@ -61,7 +61,7 @@ export function QuizOverlay({ quiz, onAnswer }: Props) {
     <div className="absolute inset-0 flex items-center justify-center px-5 pointer-events-none">
       <div
         className="w-full max-w-[400px] rounded-[20px] p-6 flex flex-col gap-4 pointer-events-auto"
-        style={{ background: 'rgba(255,255,255,0.97)', boxShadow: '0 8px 40px rgba(0,0,0,0.35)' }}
+        style={{ background: 'var(--color-surface)', boxShadow: '0 8px 40px rgba(0,0,0,0.35)' }}
       >
         {/* 단어 + 타이머 */}
         <div className="flex items-center justify-between gap-3">

@@ -124,7 +124,7 @@ export default function CloudJumpGame() {
         >
           <div
             className="w-full max-w-[380px] rounded-[24px] p-7 flex flex-col gap-5 text-center"
-            style={{ background: 'rgba(255,255,255,0.97)' }}
+            style={{ background: 'var(--color-surface)' }}
           >
             <div>
               <p className="text-[36px] mb-1">🌤️</p>
