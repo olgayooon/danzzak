@@ -210,43 +210,20 @@ export default function MissingLettersGame() {
     }
   }, [state.phase, state.correct, state.wrong, state.maxCombo, state.startTime, state.score]);
 
-  const handleInputChange = useCallback((idx: number, value: string) => {
-    dispatch({ type: 'SET_INPUT', index: idx, value });
-    if (value) {
-      const nextMissing = state.missingIndices[state.missingIndices.indexOf(idx) + 1];
-      if (nextMissing !== undefined) {
-        setTimeout(() => inputRefs.current.get(nextMissing)?.focus(), 50);
-      } else {
-        handleSubmit();
-      }
-    }
-  }, [state.missingIndices]);
-
-  const handleKeyDown = useCallback((idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !state.inputs.get(idx)) {
-      const currentMissingIdx = state.missingIndices.indexOf(idx);
-      if (currentMissingIdx > 0) {
-        const prevMissing = state.missingIndices[currentMissingIdx - 1];
-        inputRefs.current.get(prevMissing)?.focus();
-      }
-    }
-  }, [state.inputs, state.missingIndices]);
-
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback((pendingInput?: { index: number; value: string }) => {
     if (!currentWord || state.phase !== 'playing') return;
 
-    const isCorrect = state.missingIndices.every(idx => {
-      const input = state.inputs.get(idx)?.toLowerCase();
-      const correct = currentWord.term[idx].toLowerCase();
-      return input === correct;
-    });
+    const getInput = (idx: number) =>
+      (pendingInput?.index === idx ? pendingInput.value : state.inputs.get(idx))?.toLowerCase();
+
+    const isCorrect = state.missingIndices.every(idx =>
+      getInput(idx) === currentWord.term[idx].toLowerCase()
+    );
 
     const wrong = new Set<number>();
     if (!isCorrect) {
       state.missingIndices.forEach(idx => {
-        const input = state.inputs.get(idx)?.toLowerCase();
-        const correct = currentWord.term[idx].toLowerCase();
-        if (input !== correct) wrong.add(idx);
+        if (getInput(idx) !== currentWord.term[idx].toLowerCase()) wrong.add(idx);
       });
       setWrongIndices(wrong);
     }
@@ -267,6 +244,28 @@ export default function MissingLettersGame() {
       dispatch({ type: 'NEXT_WORD' });
     }, isCorrect ? 300 : 800);
   }, [currentWord, state, updateWordStats, wordSet]);
+
+  const handleInputChange = useCallback((idx: number, value: string) => {
+    dispatch({ type: 'SET_INPUT', index: idx, value });
+    if (value) {
+      const nextMissing = state.missingIndices[state.missingIndices.indexOf(idx) + 1];
+      if (nextMissing !== undefined) {
+        setTimeout(() => inputRefs.current.get(nextMissing)?.focus(), 50);
+      } else {
+        handleSubmit({ index: idx, value });
+      }
+    }
+  }, [state.missingIndices, handleSubmit]);
+
+  const handleKeyDown = useCallback((idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !state.inputs.get(idx)) {
+      const currentMissingIdx = state.missingIndices.indexOf(idx);
+      if (currentMissingIdx > 0) {
+        const prevMissing = state.missingIndices[currentMissingIdx - 1];
+        inputRefs.current.get(prevMissing)?.focus();
+      }
+    }
+  }, [state.inputs, state.missingIndices]);
 
   if (restorePending) {
     return (
@@ -358,7 +357,7 @@ export default function MissingLettersGame() {
       {/* 제출 버튼 */}
       {state.phase === 'playing' && (
         <button
-          onClick={handleSubmit}
+          onClick={() => handleSubmit()}
           disabled={state.missingIndices.some(idx => !state.inputs.get(idx))}
           className="w-full py-3 rounded-full bg-[var(--color-primary)] text-white font-bold text-[15px] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
