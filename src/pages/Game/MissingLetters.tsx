@@ -41,7 +41,7 @@ type Action =
 const VOWELS = 'aeiou';
 
 function getMissingCount(word: Word): number {
-  const len = word.term.length;
+  const len = word.term.replace(/ /g, '').length; // 공백 제외 글자 수 기준
   const total = word.stats.correct + word.stats.wrong || 1;
   const wrongRate = word.stats.wrong / total;
   let base = Math.floor(len * 0.3);
@@ -54,14 +54,14 @@ function getMissingIndices(term: string, count: number): number[] {
   const indices = new Set<number>();
   const termLower = term.toLowerCase();
 
-  // 모음 우선
+  // 모음 우선 (공백 제외)
   for (let i = 1; i < term.length && indices.size < count; i++) {
-    if (VOWELS.includes(termLower[i])) indices.add(i);
+    if (termLower[i] !== ' ' && VOWELS.includes(termLower[i])) indices.add(i);
   }
 
-  // 모음 부족하면 자음 추가
+  // 모음 부족하면 자음 추가 (공백 제외)
   for (let i = 1; i < term.length && indices.size < count; i++) {
-    if (!VOWELS.includes(termLower[i])) indices.add(i);
+    if (termLower[i] !== ' ' && !VOWELS.includes(termLower[i])) indices.add(i);
   }
 
   return Array.from(indices).sort((a, b) => a - b);
@@ -70,7 +70,7 @@ function getMissingIndices(term: string, count: number): number[] {
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET_INPUT':
-      state.inputs.set(action.index, action.value.toUpperCase().slice(0, 1));
+      state.inputs.set(action.index, action.value.toLowerCase().slice(0, 1));
       return { ...state };
     case 'SUBMIT': {
       const currentWord = state.words[state.index];
