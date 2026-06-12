@@ -64,7 +64,7 @@ function getMissingIndices(term: string, count: number): number[] {
     if (!VOWELS.includes(termLower[i])) indices.add(i);
   }
 
-  return Array.from(indices);
+  return Array.from(indices).sort((a, b) => a - b);
 }
 
 function reducer(state: State, action: Action): State {
