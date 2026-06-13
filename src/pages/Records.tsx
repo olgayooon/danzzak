@@ -25,7 +25,7 @@ function AccuracyText({ value }: { value: number }) {
     : value >= 50
     ? 'text-[var(--color-warning)]'
     : 'text-[var(--color-danger)]';
-  return <span className={color}>{value}%</span>;
+  return <span className={color}>{value}점</span>;
 }
 
 // ── 단어장별 집중 뷰 ────────────────────────────────────────────────
@@ -98,7 +98,7 @@ function SetRecordsView({ setId }: { setId: string }) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
             {[
               { icon: <Target size={16} />, label: '총 게임', value: `${totalGames}회`, color: 'text-[var(--color-primary)]' },
-              { icon: <TrendingUp size={16} />, label: '평균 정확도', value: `${avgAccuracy}%`, color: avgAccuracy >= 80 ? 'text-[var(--color-success)]' : avgAccuracy >= 50 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]' },
+              { icon: <TrendingUp size={16} />, label: '평균 점수', value: `${avgAccuracy}점`, color: avgAccuracy >= 80 ? 'text-[var(--color-success)]' : avgAccuracy >= 50 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]' },
               { icon: <Zap size={16} />, label: '최고 콤보', value: `${maxCombo}`, color: 'text-[var(--color-accent-yellow)]' },
               { icon: <Clock size={16} />, label: '총 학습 시간', value: formatDuration(totalTime), color: 'text-[var(--color-info)]' },
             ].map(stat => (
@@ -130,7 +130,7 @@ function SetRecordsView({ setId }: { setId: string }) {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-[15px] font-bold"><AccuracyText value={acc} /></p>
-                      <p className="text-[10px] text-[var(--color-ink-faint)]">평균 정확도</p>
+                      <p className="text-[10px] text-[var(--color-ink-faint)]">평균 점수</p>
                     </div>
                   </div>
                 );
@@ -221,7 +221,7 @@ export default function Records() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
         {[
           { icon: <Target size={18} />, label: '총 게임', value: `${totalGames}회`, color: 'text-[var(--color-primary)]' },
-          { icon: <TrendingUp size={18} />, label: '평균 정확도', value: `${avgAccuracy}%`, color: totalGames > 0 ? (avgAccuracy >= 80 ? 'text-[var(--color-success)]' : avgAccuracy >= 50 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]') : 'text-[var(--color-ink-muted)]' },
+          { icon: <TrendingUp size={18} />, label: '평균 점수', value: `${avgAccuracy}점`, color: totalGames > 0 ? (avgAccuracy >= 80 ? 'text-[var(--color-success)]' : avgAccuracy >= 50 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]') : 'text-[var(--color-ink-muted)]' },
           { icon: <Zap size={18} />, label: '최고 콤보', value: `${maxCombo}`, color: 'text-[var(--color-accent-yellow)]' },
           { icon: <Clock size={18} />, label: '총 학습 시간', value: formatDuration(totalTime), color: 'text-[var(--color-info)]' },
         ].map(stat => (
@@ -275,7 +275,7 @@ export default function Records() {
                         <p className={`text-[14px] font-bold ${
                           avgAcc >= 80 ? 'text-[var(--color-success)]' : avgAcc >= 50 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'
                         }`}>
-                          {avgAcc}%
+                          {avgAcc}점
                         </p>
                       );
                     })()}
@@ -312,7 +312,7 @@ export default function Records() {
                           <div className="flex items-center gap-2 shrink-0">
                             <div className="text-right">
                               <p className={`text-[14px] font-bold ${accuracy >= 80 ? 'text-[var(--color-success)]' : accuracy >= 50 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'}`}>
-                                {accuracy}%
+                                {accuracy}점
                               </p>
                               <p className="text-[10px] text-[var(--color-ink-faint)]">{record.correct}/{record.correct + record.wrong}</p>
                             </div>

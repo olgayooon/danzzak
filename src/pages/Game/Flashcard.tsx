@@ -116,6 +116,7 @@ export default function FlashcardGame() {
 
   const [state, dispatch] = useReducer(reducer, wordSet?.words ?? [], init);
   const [result, setResult] = useState<GameResult | null>(null);
+  const [showIntro, setShowIntro] = useState(true);
   const { speak } = useTTS();
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -127,6 +128,13 @@ export default function FlashcardGame() {
 
   const handleAnswerRef = useRef(handleAnswer);
   handleAnswerRef.current = handleAnswer;
+
+  // 카드 등장 시 자동 발음
+  useEffect(() => {
+    if (!showIntro && !state.done && !result && currentWord) {
+      speak(currentWord.term);
+    }
+  }, [state.index, showIntro]);
 
   // 게임 종료 감지
   useEffect(() => {
@@ -217,6 +225,50 @@ export default function FlashcardGame() {
     return (
       <div className="max-w-[480px] mx-auto px-4 py-8">
         <ResultScreen result={result} onRetry={handleRetry} />
+      </div>
+    );
+  }
+
+  if (showIntro) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)] px-6 gap-8">
+        <div className="text-center">
+          <p className="text-[48px] mb-2">🃏</p>
+          <h1 className="text-[26px] font-extrabold text-[var(--color-ink)] mb-2">플래시카드</h1>
+          <p className="text-[15px] text-[var(--color-ink-muted)]">카드를 탭해서 뜻을 확인하세요</p>
+        </div>
+
+        <div className="w-full max-w-sm flex flex-col gap-3">
+          <div className="flex items-center gap-4 p-4 rounded-[16px] bg-[var(--color-surface)] border border-[var(--color-hairline)]">
+            <span className="text-[28px]">👆</span>
+            <div>
+              <p className="text-[14px] font-bold text-[var(--color-ink)]">탭하기</p>
+              <p className="text-[13px] text-[var(--color-ink-muted)]">카드를 탭하면 뜻이 보여요</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 p-4 rounded-[16px] bg-[var(--color-surface)] border border-emerald-200 dark:border-emerald-900">
+            <span className="text-[28px]">↑</span>
+            <div>
+              <p className="text-[14px] font-bold text-emerald-600">위로 스와이프</p>
+              <p className="text-[13px] text-[var(--color-ink-muted)]">알아요 — 다음 단어로 넘어가요</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 p-4 rounded-[16px] bg-[var(--color-surface)] border border-red-200 dark:border-red-900">
+            <span className="text-[28px]">↓</span>
+            <div>
+              <p className="text-[14px] font-bold text-red-500">아래로 스와이프</p>
+              <p className="text-[13px] text-[var(--color-ink-muted)]">몰라요 — 나중에 다시 복습해요</p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowIntro(false)}
+          className="px-10 py-3.5 rounded-full font-bold text-[16px] text-white transition-all active:scale-95"
+          style={{ backgroundColor: theme.primary }}
+        >
+          시작하기
+        </button>
       </div>
     );
   }

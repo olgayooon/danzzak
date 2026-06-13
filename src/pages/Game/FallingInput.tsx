@@ -3,13 +3,8 @@ import { cn } from '../../utils/cn';
 
 interface FallingInputProps {
   onSubmit: (value: string) => void;
-  /**
-   * 오답 발생 시 부모가 증가시키는 카운터.
-   * 값이 바뀌면 흔들림 애니메이션을 트리거하고 입력창을 초기화.
-   * React state이지만 FallingCard와 완전히 분리된 트리에 있으므로
-   * 이 리렌더링이 FallingCard에 전달되지 않음.
-   */
   wrongKey: number;
+  focusKey: number;
   theme: { primary: string };
   disabled?: boolean;
 }
@@ -23,6 +18,7 @@ interface FallingInputProps {
 export const FallingInput = memo(function FallingInput({
   onSubmit,
   wrongKey,
+  focusKey,
   theme,
   disabled = false,
 }: FallingInputProps) {
@@ -39,10 +35,10 @@ export const FallingInput = memo(function FallingInput({
     return () => clearTimeout(t);
   }, [wrongKey]);
 
-  // 게임 시작 시 포커스
+  // 새 단어 등장 시 포커스 (게임 시작 포함)
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [focusKey]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' && value.trim()) {

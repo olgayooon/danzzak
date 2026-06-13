@@ -40,7 +40,7 @@ export function useWordSet() {
       };
       const total = stats.correct + stats.wrong;
       const accuracy = total > 0 ? stats.correct / total : 1;
-      return { ...w, stats, isWeak: accuracy < 0.6 && total >= 3 };
+      return { ...w, stats, isWeak: accuracy < 0.6 && total >= 5 };
     });
     updateSet({ ...target, words: updatedWords, updatedAt: new Date().toISOString() });
   }

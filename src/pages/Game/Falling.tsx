@@ -47,7 +47,7 @@ export default function FallingGame() {
   const [correctFeedback, setCorrectFeedback] = useState(false);
   const [wrongChoiceId, setWrongChoiceId] = useState<string | null>(null);
   const [revealVisible, setRevealVisible] = useState(false);
-  const [revealY, setRevealY] = useState(0);
+  const [revealDuration, setRevealDuration] = useState(1800);
   const [revealWord, setRevealWord] = useState<Word | null>(null);
   const lastCardY = useRef(0); // FallingCard가 매 프레임 업데이트하는 Y 위치
   const [running, setRunning] = useState(false);
@@ -146,7 +146,7 @@ export default function FallingGame() {
       setWrongKey(k => k + 1);
       setWrongChoiceId(answer);
       setRevealWord(currentWord);
-      setRevealY(lastCardY.current);
+      setRevealDuration(1800);
       setRevealVisible(true);
       setTimeout(() => {
         setWrongChoiceId(null);
@@ -162,7 +162,7 @@ export default function FallingGame() {
     updateWordStats(wordSet!.id, currentWord.id, false);
     playSound('wrong');
     setRevealWord(currentWord);
-    setRevealY(lastCardY.current);
+    setRevealDuration(1500);
     setRevealVisible(true);
     // goNext를 지연시켜 리빌이 보이는 동안 다음 단어로 넘어가지 않음
     setTimeout(() => {
@@ -289,21 +289,29 @@ export default function FallingGame() {
           />
         )}
 
-        {/* 오답/미스 시 카드가 멈춘 위치에 정답 표시 */}
+        {/* 오답/미스 — 상단 중앙 페이드인아웃 피드백 */}
         {revealVisible && revealWord && (
           <div
-            className="absolute px-4 py-2 rounded-[12px] text-[13px] font-bold animate-fade-in shadow-md"
+            key={revealWord.id + wrongKey}
+            className="absolute animate-fade-in-out pointer-events-none"
             style={{
               left: '50%',
-              top: Math.min(Math.max(revealY, 8), (arenaRef.current?.offsetHeight ?? 300) - 48),
+              top: 14,
               transform: 'translateX(-50%)',
-              backgroundColor: 'var(--color-danger-subtle)',
-              color: 'var(--color-danger)',
               zIndex: 10,
               whiteSpace: 'nowrap',
-            }}
+              '--fade-duration': `${revealDuration}ms`,
+            } as React.CSSProperties}
           >
-            정답: {revealWord.term}
+            <div
+              className="px-4 py-2 rounded-[12px] text-[13px] font-bold shadow-md"
+              style={{
+                backgroundColor: 'var(--color-danger-subtle)',
+                color: 'var(--color-danger)',
+              }}
+            >
+              정답: {revealWord.term}
+            </div>
           </div>
         )}
       </div>
@@ -337,6 +345,7 @@ export default function FallingGame() {
           <FallingInput
             onSubmit={handleSubmit}
             wrongKey={wrongKey}
+            focusKey={wordIndex}
             theme={theme}
             disabled={correctFeedback}
           />

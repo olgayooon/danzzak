@@ -31,8 +31,8 @@ export function ResultScreen({ result, onRetry }: ResultScreenProps) {
       <div className="text-6xl">{grade.emoji}</div>
       <div className="text-center">
         <p className={`text-[18px] font-semibold mb-1 ${grade.color}`}>{grade.label}</p>
-        <p className="text-[48px] font-extrabold text-[var(--color-ink)] tracking-tight">{accuracy}%</p>
-        <p className="text-[14px] text-[var(--color-ink-muted)]">{modeInfo.label} 정확도</p>
+        <p className="text-[48px] font-extrabold text-[var(--color-ink)] tracking-tight">{accuracy}점</p>
+        <p className="text-[14px] text-[var(--color-ink-muted)]">{modeInfo.label} 점수</p>
       </div>
 
       <div className="grid grid-cols-3 gap-4 w-full max-w-sm">
@@ -63,16 +63,25 @@ export function ResultScreen({ result, onRetry }: ResultScreenProps) {
           </button>
           {showWrong && (
             <div className="mt-2 rounded-[14px] border border-[var(--color-hairline)] bg-[var(--color-surface)] overflow-hidden">
-              {result.wrongWords.map((word, i) => (
-                <div
-                  key={word.id}
-                  className="flex items-center justify-between px-4 py-3 text-[14px]"
-                  style={{ borderTop: i > 0 ? '1px solid var(--color-hairline)' : undefined }}
-                >
-                  <span className="font-bold text-[var(--color-ink)]">{word.term}</span>
-                  <span className="text-[var(--color-ink-muted)]">{word.definition}</span>
-                </div>
-              ))}
+              <table className="w-full text-[14px]">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-hairline)' }}>
+                    <th className="px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-[var(--color-ink-muted)] w-[40%]">단어</th>
+                    <th className="px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-[var(--color-ink-muted)]">뜻</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.wrongWords.map((word, i) => (
+                    <tr
+                      key={word.id}
+                      style={{ borderTop: i > 0 ? '1px solid var(--color-hairline)' : undefined }}
+                    >
+                      <td className="px-4 py-3 font-bold text-[var(--color-ink)] align-top">{word.term}</td>
+                      <td className="px-4 py-3 text-[var(--color-ink-muted)] align-top">{word.definition}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

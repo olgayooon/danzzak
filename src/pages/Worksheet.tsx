@@ -292,7 +292,12 @@ const fontSize = config.fontSize;
 
           <div className="flex flex-col gap-2">
             <div className="flex gap-2">
-              <Button size="md" onClick={() => window.print()} className="flex-1">
+              <Button size="md" onClick={() => {
+                const prev = document.title;
+                document.title = config.title || wordSet?.title || '시험지';
+                window.print();
+                document.title = prev;
+              }} className="flex-1">
                 <Printer size={15} /> 인쇄
               </Button>
             </div>
@@ -302,7 +307,12 @@ const fontSize = config.fontSize;
               className="w-full"
               onClick={() => {
                 toast('인쇄 창이 열리면 "PDF로 저장"을 선택하세요.', 'success');
-                setTimeout(() => window.print(), 300);
+                const prev = document.title;
+                document.title = config.title || wordSet?.title || '시험지';
+                setTimeout(() => {
+                  window.print();
+                  document.title = prev;
+                }, 300);
               }}
             >
               <FileDown size={15} /> PDF 저장

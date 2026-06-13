@@ -5,12 +5,95 @@ import type { GameResult } from '../types/game';
 import { shuffleArray, generateChoices } from '../utils/gameUtils';
 import { playSound } from '../utils/feedback';
 
+// ── 하늘 스테이지 ────────────────────────────────────────────────
+const SKY_STAGES = [
+  { name: 'day',    scoreRange: [0,    2000] as [number,number], top: '#87CEEB', bottom: '#E0F4FF', cloudColor: 'rgba(255,255,255,0.9)',     cloudBorder: 'rgba(200,235,255,0.8)', label: '☀️ 맑은 하늘' },
+  { name: 'sunset', scoreRange: [2000, 3500] as [number,number], top: '#FF6B6B', bottom: '#FFD93D', cloudColor: 'rgba(255,220,180,0.85)',    cloudBorder: 'rgba(255,150,100,0.6)', label: '🌅 노을 하늘' },
+  { name: 'dusk',   scoreRange: [3500, 5000] as [number,number], top: '#2C1654', bottom: '#FF6B6B', cloudColor: 'rgba(200,150,220,0.7)',     cloudBorder: 'rgba(150,80,180,0.5)',  label: '🌆 어두운 하늘' },
+  { name: 'night',  scoreRange: [5000, 7000] as [number,number], top: '#0A0A1A', bottom: '#1A1A4A', cloudColor: 'rgba(150,150,200,0.5)',     cloudBorder: 'rgba(100,100,180,0.4)', label: '🌙 밤하늘' },
+  { name: 'space',  scoreRange: [7000, Infinity] as [number,number], top: '#000000', bottom: '#0A0A2A', cloudColor: 'rgba(100,80,160,0.4)', cloudBorder: 'rgba(120,80,200,0.3)', label: '🌌 우주' },
+] as const;
+
+function hexToRgb(hex: string): [number, number, number] {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+function lerpColor(a: string, b: string, t: number): string {
+  const [ar,ag,ab] = hexToRgb(a);
+  const [br,bg,bb] = hexToRgb(b);
+  return `rgb(${Math.round(ar+(br-ar)*t)},${Math.round(ag+(bg-ag)*t)},${Math.round(ab+(bb-ab)*t)})`;
+}
+function getCurrentSkyColors(score: number) {
+  const idx = SKY_STAGES.findIndex(s => score >= s.scoreRange[0] && score < s.scoreRange[1]);
+  const si = idx === -1 ? SKY_STAGES.length - 1 : idx;
+  const cur = SKY_STAGES[si];
+  const nxt = SKY_STAGES[si + 1] ?? cur;
+  const [min, max] = cur.scoreRange;
+  const progress = max === Infinity ? 1 : (score - min) / (max - min);
+  const t = Math.max(0, (progress - 0.3) / 0.7);
+  return {
+    top:        lerpColor(cur.top,    nxt.top,    t),
+    bottom:     lerpColor(cur.bottom, nxt.bottom, t),
+    cloudColor: t > 0.5 ? nxt.cloudColor : cur.cloudColor,
+    stageName:  cur.name as string,
+    label:      cur.label as string,
+  };
+}
+
+// ── 캐릭터 스프라이트 ─────────────────────────────────────────────
+const CHARACTER_SIZE = 96; // drawImage 기준 크기 (px)
+type CharState = 'idle' | 'crouch' | 'rise1' | 'rise2' | 'peak' | 'fall' | 'preland' | 'land';
+
+const CHAR_SPRITE_PATHS: Record<CharState, string> = {
+  idle:    '/character/idle.svg',
+  crouch:  '/character/crouch.svg',
+  rise1:   '/character/rise1.svg',
+  rise2:   '/character/rise2.svg',
+  peak:    '/character/peak.svg',
+  fall:    '/character/fall.svg',
+  preland: '/character/preland.svg',
+  land:    '/character/land.svg',
+};
+
+// 스쿼시·스트레치 비율 (w + h ≒ 2.0 유지)
+const SQUASH: Record<CharState, { w: number; h: number }> = {
+  idle:    { w: 1.00, h: 1.00 },
+  crouch:  { w: 1.05, h: 0.94 },
+  rise1:   { w: 0.95, h: 1.07 },
+  rise2:   { w: 0.92, h: 1.12 },
+  peak:    { w: 1.00, h: 1.00 },
+  fall:    { w: 1.03, h: 0.97 },
+  preland: { w: 1.08, h: 0.92 },
+  land:    { w: 1.15, h: 0.85 },
+};
+
+// landingTimer > 100 → land, > 0 → crouch, <= 0 → 일반
+function getCharState(vy: number, landingTimer: number): CharState {
+  if (landingTimer > 100)              return 'land';
+  if (landingTimer > 0)               return 'crouch';
+  if (vy < -8)                        return 'rise2';
+  if (vy < -4)                        return 'rise1';
+  if (vy >= -4 && vy <= -1)           return 'peak';
+  if (vy > -1 && vy <= 2)             return 'fall';
+  if (vy > 2)                         return 'preland';
+  return 'idle';
+}
+
+interface Star { x: number; y: number; size: number; phase: number }
+function generateStars(W: number, H: number): Star[] {
+  return Array.from({ length: 100 }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    size: Math.random() * 2 + 1,
+    phase: Math.random() * Math.PI * 2,
+  }));
+}
+
 // ── 상수 ────────────────────────────────────────────────────────
 const GRAVITY = 0.35;
 const JUMP_FORCE = -15;
 const PLAYER_RADIUS = 18;
 const CLOUD_GAP_Y = 90;
-const CLOUD_HEIGHT = 20;
+const CLOUD_HEIGHT = 28;
 const SCROLL_THRESHOLD = 0.4;
 const MOVE_SPEED = 4;
 const MAX_LIVES = 3;
@@ -32,6 +115,7 @@ export interface Cloud {
   height: number;
   isCheckpoint: boolean;
   stepCount: number;   // 밟은 횟수 (2회 → 제거)
+  seed: number;        // 구름 모양 시드 (생성 시 고정)
 }
 
 interface GS {
@@ -76,6 +160,7 @@ export interface HUDState {
   comboMessage: { text: string; color: string } | null;
   quiz: QuizState | null;
   scorePopup?: { id: number; value: number } | null;
+  stageLabel: string | null;
 }
 
 const SCORE_MILESTONES = [500, 1000, 1500, 2000] as const;
@@ -100,26 +185,31 @@ function randInt(min: number, max: number) {
 }
 
 function makeCloud(id: number, x: number, y: number, width: number, isCheckpoint = false): Cloud {
-  return { id, x, y, width, height: CLOUD_HEIGHT, isCheckpoint, stepCount: 0 };
+  return { id, x, y, width, height: CLOUD_HEIGHT, isCheckpoint, stepCount: 0, seed: Math.random() * 1000 };
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+
+function drawCloud(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  _seed: number,
+  cloudColor: string,
+  isCheckpoint: boolean,
+) {
+  ctx.beginPath();
   if (typeof ctx.roundRect === 'function') {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, r);
+    ctx.roundRect(x, y, width, CLOUD_HEIGHT, 6);
   } else {
-    const ri = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + ri, y);
-    ctx.lineTo(x + w - ri, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + ri);
-    ctx.lineTo(x + w, y + h - ri);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - ri, y + h);
-    ctx.lineTo(x + ri, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - ri);
-    ctx.lineTo(x, y + ri);
-    ctx.quadraticCurveTo(x, y, x + ri, y);
-    ctx.closePath();
+    ctx.rect(x, y, width, CLOUD_HEIGHT);
+  }
+  ctx.fillStyle = cloudColor;
+  ctx.fill();
+  if (isCheckpoint) {
+    ctx.strokeStyle = '#7C3AED';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
   }
 }
 
@@ -187,6 +277,12 @@ export function useCloudJumpGame(
   const touchRef = useRef({ left: false, right: false });
   const comboTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const popupIdRef = useRef(0);
+  const starsRef = useRef<Star[]>([]);
+  const lastStageNameRef = useRef<string>('day');
+  const stageLabelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const charImagesRef = useRef<Partial<Record<CharState, HTMLImageElement>>>({});
+  // 착지 타이머: 150ms 카운트다운. >100 → land, >0 → crouch, <=0 → 일반
+  const landingTimerRef = useRef(0);
 
   // stable refs so loop closure doesn't go stale
   const onFinishRef = useRef(onFinish);
@@ -198,7 +294,7 @@ export function useCloudJumpGame(
 
   const [hud, setHud] = useState<HUDState>({
     lives: MAX_LIVES, score: 0, combo: 0,
-    phase: 'playing', comboMessage: null, quiz: null,
+    phase: 'playing', comboMessage: null, quiz: null, stageLabel: null,
   });
 
   // ── 게임 오버 처리 ──────────────────────────────────────────
@@ -296,7 +392,8 @@ export function useCloudJumpGame(
     const canvas = canvasRef.current;
     if (!canvas) return;
     gsRef.current = initGS(wordsRef.current, canvas.width, canvas.height);
-    setHud({ lives: MAX_LIVES, score: 0, combo: 0, phase: 'playing', comboMessage: null, quiz: null });
+    lastStageNameRef.current = 'day';
+    setHud({ lives: MAX_LIVES, score: 0, combo: 0, phase: 'playing', comboMessage: null, quiz: null, stageLabel: null });
   }, [canvasRef]);
 
   // ── RAF 루프 (setup once) ───────────────────────────────────
@@ -304,18 +401,21 @@ export function useCloudJumpGame(
     const canvas = canvasRef.current;
     if (!canvas || words.length < 4) return;
 
-    // 배경 그라디언트 캐시 (매 프레임 생성 방지)
-    let cachedGrad: CanvasGradient | null = null;
-    let cachedGradH = 0;
+    // 캐릭터 이미지 preload
+    (Object.entries(CHAR_SPRITE_PATHS) as [CharState, string][]).forEach(([key, src]) => {
+      const img = new Image();
+      img.src = src;
+      charImagesRef.current[key] = img;
+    });
 
     // Canvas 크기 초기화
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight - 56;
-      cachedGrad = null; // 크기 변경 시 그라디언트 재생성
+      starsRef.current = generateStars(canvas.width, canvas.height);
       if (!gsRef.current) {
         gsRef.current = initGS(wordsRef.current, canvas.width, canvas.height);
-        setHud({ lives: MAX_LIVES, score: 0, combo: 0, phase: 'playing', comboMessage: null, quiz: null });
+        setHud({ lives: MAX_LIVES, score: 0, combo: 0, phase: 'playing', comboMessage: null, quiz: null, stageLabel: null });
       }
     };
     resize();
@@ -364,6 +464,11 @@ export function useCloudJumpGame(
       const W = canvas!.width;
       const H = canvas!.height;
 
+      // 착지 타이머 감소 (ms 단위)
+      if (landingTimerRef.current > 0) {
+        landingTimerRef.current = Math.max(0, landingTimerRef.current - dt * 16.667);
+      }
+
       // ── update ─────────────────────────────────────────────
       if (gs.phase === 'returning') {
         gs.returningFrames += dt;
@@ -396,24 +501,24 @@ export function useCloudJumpGame(
         if (gs.player.x > W + PLAYER_RADIUS) gs.player.x = -PLAYER_RADIUS;
         else if (gs.player.x < -PLAYER_RADIUS) gs.player.x = W + PLAYER_RADIUS;
 
-        // 구름 충돌 (낙하 중일 때만)
+        // 구름 충돌 (낙하 중일 때만, 발끝 기준 상단 통과 감지)
         if (gs.player.vy > 0) {
           const pBottom = gs.player.y + PLAYER_RADIUS;
           const prevBottom = pBottom - gs.player.vy * dt;
 
           for (let ci = 0; ci < gs.clouds.length; ci++) {
             const cloud = gs.clouds[ci];
-            if (
-              prevBottom <= cloud.y + 4 &&
-              pBottom >= cloud.y &&
-              pBottom <= cloud.y + cloud.height + 10 &&
-              gs.player.x >= cloud.x - PLAYER_RADIUS * 0.5 &&
-              gs.player.x <= cloud.x + cloud.width + PLAYER_RADIUS * 0.5
-            ) {
+            const crossedTop = prevBottom <= cloud.y && pBottom >= cloud.y;
+            const withinX =
+              gs.player.x + PLAYER_RADIUS * 0.6 > cloud.x &&
+              gs.player.x - PLAYER_RADIUS * 0.6 < cloud.x + cloud.width;
+            if (crossedTop && withinX) {
               gs.player.y = cloud.y - PLAYER_RADIUS;
               gs.player.vy = JUMP_FORCE;
               gs.score += 10;
               gs.lastLandedCloudId = cloud.id;
+              // 착지 애니메이션 타이머 (150ms 카운트다운: >100 land, >0 crouch)
+              landingTimerRef.current = 150;
               playSound('tick');
 
               // 밟은 횟수 증가 — 2번째면 제거, 1번째면 유지
@@ -516,29 +621,43 @@ export function useCloudJumpGame(
 
       // ── draw ───────────────────────────────────────────────
       const toSY = (wy: number) => wy - gs.cameraY;
+      const sky = getCurrentSkyColors(gs.score);
 
-      // 배경 그라디언트 (캐시 — 높이가 바뀔 때만 재생성)
-      if (!cachedGrad || cachedGradH !== H) {
-        cachedGrad = ctx.createLinearGradient(0, 0, 0, H);
-        cachedGrad.addColorStop(0, '#55b3ff');
-        cachedGrad.addColorStop(1, '#c5e1ff');
-        cachedGradH = H;
+      // 스테이지 전환 감지
+      if (sky.stageName !== lastStageNameRef.current) {
+        lastStageNameRef.current = sky.stageName;
+        if (stageLabelTimerRef.current) clearTimeout(stageLabelTimerRef.current);
+        setHud(h => ({ ...h, stageLabel: sky.label }));
+        stageLabelTimerRef.current = setTimeout(
+          () => setHud(h => ({ ...h, stageLabel: null })), 2000,
+        );
       }
-      ctx.fillStyle = cachedGrad;
+
+      // 배경 그라디언트 (점수에 따라 동적 변화)
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, sky.top);
+      grad.addColorStop(1, sky.bottom);
+      ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
+
+      // 별 (night, space 스테이지)
+      if (sky.stageName === 'night' || sky.stageName === 'space') {
+        const baseOpacity = sky.stageName === 'space' ? 1.0 : 0.6;
+        for (const star of starsRef.current) {
+          const twinkle = (Math.sin(timestamp * 0.002 + star.phase) + 1) / 2;
+          const opacity = baseOpacity * (0.5 + twinkle * 0.5);
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${opacity.toFixed(2)})`;
+          ctx.fill();
+        }
+      }
 
       // 구름
       for (const cloud of gs.clouds) {
         const sy = toSY(cloud.y);
-        if (sy > H + 20 || sy < -cloud.height - 20) continue;
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        roundRect(ctx, cloud.x, sy, cloud.width, cloud.height, 8);
-        ctx.fill();
-        if (cloud.isCheckpoint) {
-          ctx.strokeStyle = '#a78bfa';
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
-        }
+        if (sy > H + 40 || sy < -CLOUD_HEIGHT * 3) continue;
+        drawCloud(ctx, cloud.x, sy, cloud.width, cloud.seed, sky.cloudColor, cloud.isCheckpoint);
       }
 
       // 하트 아이템
@@ -555,13 +674,23 @@ export function useCloudJumpGame(
       // 캐릭터
       const px = gs.player.x;
       const py = toSY(gs.player.y);
-      ctx.beginPath();
-      ctx.arc(px, py, PLAYER_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fill();
-      ctx.strokeStyle = '#7C3AED';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      const charState = getCharState(gs.player.vy, landingTimerRef.current);
+      const charImg = charImagesRef.current[charState];
+      if (charImg?.complete && charImg.naturalWidth > 0) {
+        const sq = SQUASH[charState];
+        const drawW = CHARACTER_SIZE * sq.w;
+        const drawH = CHARACTER_SIZE * sq.h;
+        ctx.drawImage(charImg, px - drawW / 2, py - drawH / 2, drawW, drawH);
+      } else {
+        // 이미지 로드 전 폴백: 원
+        ctx.beginPath();
+        ctx.arc(px, py, PLAYER_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
+        ctx.strokeStyle = '#7C3AED';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
 
       // 퀴즈 중 어두운 오버레이
       if (gs.phase === 'quiz') {
