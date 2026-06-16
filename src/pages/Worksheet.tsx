@@ -426,7 +426,7 @@ function SheetRenderer({ words, config, cols, fontSize, lineSpacing }: {
     return <ChecklistTable words={words} cols={cols} fontSize={fontSize} lineSpacing={lineSpacing} />;
   }
   if (config.type === 'multiple-choice') {
-    return <MultipleChoiceTable words={words} fontSize={fontSize} lineSpacing={lineSpacing} includeAnswer={config.includeAnswer} questionField={config.questionField ?? 'definition'} />;
+    return <MultipleChoiceTable words={words} fontSize={fontSize} lineSpacing={lineSpacing} includeAnswer={config.includeAnswer} questionField={(config.questionField === 'term' ? 'term' : 'definition')} />;
   }
   if (config.type === 'translation') {
     return <TranslationTable words={words} cols={cols} fontSize={fontSize} lineSpacing={lineSpacing} includeAnswer={config.includeAnswer} />;
@@ -447,7 +447,7 @@ function FillBlankTable({ words, cols, fontSize, lineSpacing, includeAnswer, que
 
   // 랜덤 모드: 단어마다 questionField를 미리 결정 (렌더 간 일관성 유지)
   const randomFields = words.map(() => (Math.random() < 0.5 ? 'definition' : 'term') as 'definition' | 'term');
-  function resolveField(word: Word, globalIdx: number): 'definition' | 'term' {
+  function resolveField(_word: Word, globalIdx: number): 'definition' | 'term' {
     if (questionField === 'random') return randomFields[globalIdx];
     return questionField;
   }
@@ -896,9 +896,9 @@ function EditableTableRow({ word, index, config, rowH, editCell, onUpdate, lineS
         <td className="align-top pt-1 pb-1 pr-2 text-[var(--color-ink-secondary)] leading-snug break-words">
           <span
             contentEditable suppressContentEditableWarning
-            onBlur={e => onUpdate(word.id, questionField, e.currentTarget.textContent ?? '')}
+            onBlur={e => onUpdate(word.id, questionField === 'term' ? 'term' : 'definition', e.currentTarget.textContent ?? '')}
             className={editCell}
-          >{word[questionField]}</span>
+          >{word[questionField === 'term' ? 'term' : 'definition']}</span>
         </td>
         <td className="align-bottom" style={{ borderBottom: '1.5px solid var(--color-ink)' }} />
       </tr>
