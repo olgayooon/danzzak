@@ -9,8 +9,8 @@ export type WorksheetType =
 export interface WorksheetConfig {
   type: WorksheetType;
   title: string;
-  columns: 1 | 2 | 3;
-  questionField?: 'definition' | 'term';
+  columns: 1 | 2;
+  questionField?: 'definition' | 'term' | 'random';
   repeatCount?: number;
   includeAnswer: boolean;
   fontSize: 'sm' | 'md' | 'lg';

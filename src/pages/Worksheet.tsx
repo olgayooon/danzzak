@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Printer, Pencil, Eye, FileDown, ChevronDown, ChevronUp } from 'lucide-react';
 import {
@@ -29,7 +29,7 @@ import { cn } from '../utils/cn';
 const DEFAULT_CONFIG: WorksheetConfig = {
   type: 'fill-blank',
   title: '',
-  columns: 2,
+  columns: 1,
   questionField: 'definition',
   repeatCount: 3,
   includeAnswer: true,
@@ -63,7 +63,8 @@ export default function Worksheet() {
   const [editMode, setEditMode] = useState(false);
   const [editedTitle, setEditedTitle] = useState(config.title);
   const [editedWords, setEditedWords] = useState<Word[]>(wordSet?.words ?? []);
-const [typeOpen, setTypeOpen] = useState(true);
+  const [lockedWords, setLockedWords] = useState<Word[] | null>(null);
+  const [typeOpen, setTypeOpen] = useState(true);
   const [editOpen, setEditOpen] = useState(true);
 
   const sensors = useSensors(
@@ -83,14 +84,20 @@ const [typeOpen, setTypeOpen] = useState(true);
   function toggleEdit() {
     if (!editMode) {
       setEditedTitle(config.title);
-      setEditedWords(config.scramble ? shuffleArray(wordSet!.words) : [...wordSet!.words]);
+      setEditedWords(lockedWords ?? (config.scramble ? shuffleArray(wordSet!.words) : [...wordSet!.words]));
     }
     setEditMode(v => !v);
   }
 
+  function saveEdit() {
+    setLockedWords([...editedWords]);
+    update('title', editedTitle);
+    setEditMode(false);
+  }
+
   const displayWords = editMode
     ? editedWords
-    : (config.scramble ? shuffleArray(wordSet.words) : wordSet.words);
+    : (lockedWords ?? (config.scramble ? shuffleArray(wordSet.words) : wordSet.words));
 
   function update<K extends keyof WorksheetConfig>(key: K, value: WorksheetConfig[K]) {
     setConfig(prev => ({ ...prev, [key]: value }));
@@ -123,22 +130,32 @@ const fontSize = config.fontSize;
           <ArrowLeft size={16} /> 뒤로
         </button>
         <h1 className="text-[22px] font-extrabold text-[var(--color-ink)] tracking-tight flex-1">시험지 만들기</h1>
+        {editMode && (
+          <button
+            onClick={saveEdit}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[13px] font-semibold bg-[var(--color-primary)] text-white transition-all"
+          >
+            저장
+          </button>
+        )}
         <button
           onClick={toggleEdit}
           className={cn(
             'flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[13px] font-semibold transition-all',
             editMode
-              ? 'bg-[var(--color-primary)] text-white'
+              ? 'bg-[var(--color-canvas)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] border border-[var(--color-hairline)]'
               : 'bg-[var(--color-canvas)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] border border-[var(--color-hairline)]'
           )}
         >
-          {editMode ? <><Eye size={14} /> 미리보기</> : <><Pencil size={14} /> 직접 편집</>}
+          {editMode ? <><Eye size={14} /> 취소</> : <><Pencil size={14} /> 직접 편집</>}
         </button>
       </div>
 
       <div className="flex gap-6 flex-col lg:flex-row">
         {/* 설정 패널 */}
         <div className="no-print w-full lg:w-64 shrink-0 flex flex-col gap-4">
+          {/* 모바일: 시험지 유형 + 시험지 편집 2열 / lg: 세로 스택 */}
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
           {/* 시험지 유형 */}
           <div className="bg-[var(--color-surface)] rounded-[20px] border border-[var(--color-hairline)] overflow-hidden">
             <button
@@ -150,24 +167,19 @@ const fontSize = config.fontSize;
             </button>
             {typeOpen && (
               <div className="px-5 pb-4 flex flex-col gap-1">
-                {(Object.entries(WORKSHEET_TYPE_INFO) as [WorksheetType, typeof WORKSHEET_TYPE_INFO[WorksheetType]][]).map(([type, info]) => {
-                  const available = AVAILABLE_TYPES.includes(type);
+                {AVAILABLE_TYPES.map(type => {
+                  const info = WORKSHEET_TYPE_INFO[type];
                   return (
                     <button
                       key={type}
-                      onClick={() => available && update('type', type)}
-                      disabled={!available}
+                      onClick={() => update('type', type)}
                       className={cn(
-                        'flex items-center gap-3 p-2.5 rounded-[10px] text-left transition-all',
-                        config.type === type && available ? 'bg-[var(--color-primary-subtle)] border border-[var(--color-primary)]' : '',
-                        available ? 'hover:bg-[var(--color-canvas)] cursor-pointer' : 'opacity-40 cursor-not-allowed'
+                        'flex items-center gap-3 p-2.5 rounded-[10px] text-left transition-all hover:bg-[var(--color-canvas)]',
+                        config.type === type ? 'bg-[var(--color-primary-subtle)] border border-[var(--color-primary)]' : ''
                       )}
                     >
                       <span className="text-lg">{info.emoji}</span>
-                      <div>
-                        <p className="text-[13px] font-semibold text-[var(--color-ink)]">{info.label}</p>
-                        {!available && <p className="text-[10px] text-[var(--color-ink-faint)]">준비중</p>}
-                      </div>
+                      <p className="text-[13px] font-semibold text-[var(--color-ink)]">{info.label}</p>
                     </button>
                   );
                 })}
@@ -184,14 +196,15 @@ const fontSize = config.fontSize;
               <h2 className="text-[14px] font-bold text-[var(--color-ink)]">시험지 편집</h2>
               {editOpen ? <ChevronUp size={16} className="text-[var(--color-ink-muted)]" /> : <ChevronDown size={16} className="text-[var(--color-ink-muted)]" />}
             </button>
-            <div className={cn('px-5 pb-5 flex flex-col gap-3', editOpen ? 'block' : 'hidden')}>
+            {editOpen && (
+            <div className="px-5 pb-5 flex flex-col gap-4">
 
             <div>
               <label className="text-[11px] font-semibold text-[var(--color-ink-muted)] mb-1.5 block uppercase tracking-wide">제목</label>
               <input
                 value={editMode ? editedTitle : config.title}
                 onChange={e => editMode ? setEditedTitle(e.target.value) : update('title', e.target.value)}
-                className="w-full border border-[var(--color-hairline)] rounded-[8px] px-3 py-2 text-[13px] outline-none focus:border-[var(--color-primary)]"
+                className="w-full border border-[var(--color-hairline)] rounded-[8px] px-2.5 py-1.5 text-[13px] outline-none focus:border-[var(--color-primary)]"
               />
             </div>
 
@@ -202,12 +215,13 @@ const fontSize = config.fontSize;
                   {([
                     ['definition', '한글 뜻'] as const,
                     ['term', '영단어'] as const,
+                    ['random', '랜덤'] as const,
                   ]).map(([field, label]) => (
                     <button
                       key={field}
                       onClick={() => update('questionField', field)}
                       className={cn(
-                        'flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold border transition-all',
+                        'flex-1 py-1 rounded-[8px] text-[12px] font-semibold border transition-all',
                         (config.questionField ?? 'definition') === field
                           ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
                           : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
@@ -224,9 +238,9 @@ const fontSize = config.fontSize;
               <div>
                 <label className="text-[11px] font-semibold text-[var(--color-ink-muted)] mb-1.5 block uppercase tracking-wide">열 수</label>
                 <div className="flex gap-1.5">
-                  {([1, 2, 3] as const).map(col => (
+                  {([1, 2] as const).map(col => (
                     <button key={col} onClick={() => update('columns', col)}
-                      className={cn('flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold border transition-all',
+                      className={cn('flex-1 py-1 rounded-[8px] text-[12px] font-semibold border transition-all',
                         config.columns === col ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
                       )}>
                       {col}단
@@ -241,7 +255,7 @@ const fontSize = config.fontSize;
               <div className="flex gap-1.5">
                 {(['sm', 'md', 'lg'] as const).map(size => (
                   <button key={size} onClick={() => update('fontSize', size)}
-                    className={cn('flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold border transition-all',
+                    className={cn('flex-1 py-1 rounded-[8px] text-[12px] font-semibold border transition-all',
                       config.fontSize === size ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
                     )}>
                     {size === 'sm' ? '작게' : size === 'md' ? '보통' : '크게'}
@@ -255,7 +269,7 @@ const fontSize = config.fontSize;
               <div className="flex gap-1.5">
                 {(['normal', 'wide'] as const).map(spacing => (
                   <button key={spacing} onClick={() => update('lineSpacing', spacing)}
-                    className={cn('flex-1 py-1.5 rounded-[8px] text-[12px] font-semibold border transition-all',
+                    className={cn('flex-1 py-1 rounded-[8px] text-[12px] font-semibold border transition-all',
                       config.lineSpacing === spacing ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] border-[var(--color-hairline)] hover:border-[var(--color-primary)]'
                     )}>
                     {spacing === 'normal' ? '보통' : '넓게'}
@@ -264,31 +278,34 @@ const fontSize = config.fontSize;
               </div>
             </div>
 
-            {!editMode && (
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={config.scramble} onChange={e => update('scramble', e.target.checked)} className="w-4 h-4 accent-[var(--color-primary)]" />
-                <span className="text-[12px] text-[var(--color-ink)]">문제 순서 섞기</span>
-              </label>
-            )}
-
-            {config.type !== 'write-repeat' && config.type !== 'checklist' && (
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={config.includeAnswer} onChange={e => update('includeAnswer', e.target.checked)} className="w-4 h-4 accent-[var(--color-primary)]" />
-                <span className="text-[12px] text-[var(--color-ink)]">정답지 포함</span>
-              </label>
-            )}
+            <div className="flex flex-col gap-2">
+              {!editMode && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={config.scramble} onChange={e => update('scramble', e.target.checked)} className="w-4 h-4 accent-[var(--color-primary)] shrink-0" />
+                  <span className="text-[13px] text-[var(--color-ink)]">문제 순서 섞기</span>
+                </label>
+              )}
+              {config.type !== 'write-repeat' && config.type !== 'checklist' && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={config.includeAnswer} onChange={e => update('includeAnswer', e.target.checked)} className="w-4 h-4 accent-[var(--color-primary)] shrink-0" />
+                  <span className="text-[13px] text-[var(--color-ink)]">정답지 포함</span>
+                </label>
+              )}
+            </div>
 
             {config.type === 'write-repeat' && (
               <div>
                 <label className="text-[11px] font-semibold text-[var(--color-ink-muted)] mb-1.5 block uppercase tracking-wide">반복 횟수</label>
                 <input type="number" min={1} max={10} value={config.repeatCount ?? 3}
                   onChange={e => update('repeatCount', Number(e.target.value))}
-                  className="w-full border border-[var(--color-hairline)] rounded-[8px] px-3 py-2 text-[13px] outline-none focus:border-[var(--color-primary)]"
+                  className="w-full border border-[var(--color-hairline)] rounded-[8px] px-2.5 py-1.5 text-[13px] outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
             )}
             </div>
+            )}
           </div>
+          </div>{/* end grid */}
 
           <div className="flex flex-col gap-2">
             <div className="flex gap-2">
@@ -383,6 +400,9 @@ const fontSize = config.fontSize;
 const FS: Record<string, string> = { sm: '12px', md: '14px', lg: '16px' };
 const ROW_H: Record<string, string> = { normal: '28px', wide: '40px' };
 
+const TH = 'border border-[var(--color-hairline)] px-2 py-1.5 text-left font-bold text-[var(--color-ink-secondary)] bg-[var(--color-canvas)]';
+const TD = 'border border-[var(--color-hairline)] px-2 py-1 align-middle';
+
 function getQuestionText(word: Word, questionField: 'definition' | 'term') {
   return questionField === 'definition' ? word.definition : word.term;
 }
@@ -417,42 +437,82 @@ function SheetRenderer({ words, config, cols, fontSize, lineSpacing }: {
 // ── 빈칸 채우기 ─────────────────────────────────────────────────
 
 function FillBlankTable({ words, cols, fontSize, lineSpacing, includeAnswer, questionField }: {
-  words: Word[]; cols: number; fontSize: string; lineSpacing: string; includeAnswer: boolean; questionField: 'definition' | 'term';
+  words: Word[]; cols: number; fontSize: string; lineSpacing: string; includeAnswer: boolean; questionField: 'definition' | 'term' | 'random';
 }) {
   const groups = splitIntoColumns(words, cols);
+  const maxRows = Math.max(...groups.map(g => g.length));
+  const offsets = groups.map((_, gi) => groups.slice(0, gi).reduce((s, g) => s + g.length, 0));
   const fs = FS[fontSize] ?? '14px';
   const rowH = ROW_H[lineSpacing] ?? '28px';
 
+  // 랜덤 모드: 단어마다 questionField를 미리 결정 (렌더 간 일관성 유지)
+  const randomFields = words.map(() => (Math.random() < 0.5 ? 'definition' : 'term') as 'definition' | 'term');
+  function resolveField(word: Word, globalIdx: number): 'definition' | 'term' {
+    if (questionField === 'random') return randomFields[globalIdx];
+    return questionField;
+  }
+
+  const headerQLabel = questionField === 'definition' ? '뜻 (한국어)' : questionField === 'term' ? '영단어' : '문제';
+  const headerALabel = questionField === 'definition' ? '영단어' : questionField === 'term' ? '뜻 (한국어)' : '정답';
+
   return (
     <>
-      <div className="worksheet-section flex gap-6">
-        {groups.map((group, gi) => {
-          const offset = groups.slice(0, gi).reduce((s, g) => s + g.length, 0);
-          return (
-            <table key={gi} className="flex-1 border-collapse" style={{ fontSize: fs }}>
-              <colgroup>
-                <col style={{ width: '24px' }} />
-                <col style={{ width: '45%' }} />
+      <div className="worksheet-section border border-[var(--color-hairline)] overflow-hidden">
+        <table className="w-full border-collapse table-fixed" style={{ fontSize: fs }}>
+          <colgroup>
+            {groups.map((_, gi) => (
+              <Fragment key={gi}>
+                <col style={{ width: '36px' }} />
+                <col style={{ width: `${Math.floor((100 / groups.length - 4) / 2)}%` }} />
                 <col />
-              </colgroup>
-              <tbody>
-                {group.map((word, i) => (
-                  <tr key={word.id} style={{ minHeight: rowH, breakInside: 'avoid' }}>
-                    <td className="text-right pr-1.5 text-[var(--color-ink-faint)] align-top pt-1 whitespace-nowrap">
-                      {offset + i + 1}.
-                    </td>
-                    <td className="align-top pt-1 pb-1 pr-2 text-[var(--color-ink-secondary)] leading-snug break-words">
-                      {getQuestionText(word, questionField)}
-                    </td>
-                    <td className="align-bottom" style={{ borderBottom: '1.5px solid #18181B' }} />
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          );
-        })}
+              </Fragment>
+            ))}
+          </colgroup>
+          <thead>
+            <tr>
+              {groups.map((_, gi) => (
+                <Fragment key={gi}>
+                  <th className={cn(TH, 'text-center')} />
+                  <th className={TH}>{headerQLabel}</th>
+                  <th className={TH}>{headerALabel}</th>
+                </Fragment>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: maxRows }, (_, ri) => (
+              <tr key={ri} style={{ height: rowH }}>
+                {groups.map((group, gi) => {
+                  const word = group[ri];
+                  if (!word) return (
+                    <Fragment key={gi}>
+                      <td className={TD} /><td className={TD} /><td className={TD} />
+                    </Fragment>
+                  );
+                  const globalIdx = offsets[gi] + ri;
+                  const field = resolveField(word, globalIdx);
+                  return (
+                    <Fragment key={gi}>
+                      <td className={cn(TD, 'text-center text-[var(--color-ink-faint)] whitespace-nowrap')}>{globalIdx + 1}</td>
+                      <td className={cn(TD, 'text-[var(--color-ink-secondary)] leading-snug break-words')}>{getQuestionText(word, field)}</td>
+                      <td className={TD} />
+                    </Fragment>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      {includeAnswer && <AnswerKeyTable words={words} cols={cols} fontSize={fontSize} answerField={questionField === 'definition' ? 'term' : 'definition'} />}
+      {includeAnswer && (
+        <AnswerKeyTable
+          words={words}
+          cols={cols}
+          fontSize={fontSize}
+          answerField={questionField === 'definition' ? 'term' : questionField === 'term' ? 'definition' : undefined}
+          randomFields={questionField === 'random' ? randomFields : undefined}
+        />
+      )}
     </>
   );
 }
@@ -463,38 +523,65 @@ function WriteRepeatTable({ words, cols, fontSize, lineSpacing, repeatCount }: {
   words: Word[]; cols: number; fontSize: string; lineSpacing: string; repeatCount: number;
 }) {
   const groups = splitIntoColumns(words, cols);
+  const maxGroupLen = Math.max(...groups.map(g => g.length));
+  const offsets = groups.map((_, gi) => groups.slice(0, gi).reduce((s, g) => s + g.length, 0));
   const fs = FS[fontSize] ?? '14px';
-  const lineH = lineSpacing === 'wide' ? '36px' : '26px';
+  const lineH = lineSpacing === 'wide' ? '34px' : '26px';
+  const blockSize = repeatCount + 1;
+  const totalRows = maxGroupLen * blockSize;
+
+  // 2단일 때 각 단이 정확히 50%씩 차지하도록 table-fixed + 명시적 퍼센트 너비 지정
+  const numColPct = 6;           // 번호 열 (각 단 기준)
+  const contentColPct = 100 / groups.length - numColPct;
 
   return (
-    <div className="worksheet-section flex gap-8">
-      {groups.map((group, gi) => {
-        const offset = groups.slice(0, gi).reduce((s, g) => s + g.length, 0);
-        return (
-          <table key={gi} className="flex-1 border-collapse" style={{ fontSize: fs }}>
-              {group.map((word, i) => (
-                <tbody key={word.id} style={{ breakInside: 'avoid' }}>
-                  <tr>
-                    <td className="text-right pr-1.5 text-[var(--color-ink-faint)] whitespace-nowrap align-top pt-1" style={{ width: '22px', fontSize: '11px' }}>
-                      {offset + i + 1}.
-                    </td>
-                    <td className="pt-1 pb-0.5">
-                      <span className="font-bold text-[var(--color-ink)]">{word.term}</span>
-                      <span className="text-[var(--color-ink-muted)] ml-1.5" style={{ fontSize: '11px' }}>— {word.definition}</span>
-                    </td>
-                  </tr>
-                  {Array.from({ length: repeatCount }).map((_, j) => (
-                    <tr key={j} style={{ height: lineH }}>
-                      <td />
-                      <td style={{ borderBottom: '1px solid #E4E4E7' }} />
-                    </tr>
-                  ))}
-                  <tr style={{ height: '6px' }}><td /><td /></tr>
-                </tbody>
-              ))}
-          </table>
-        );
-      })}
+    <div className="worksheet-section border border-[var(--color-hairline)] overflow-hidden">
+      <table className="w-full border-collapse table-fixed" style={{ fontSize: fs }}>
+        <colgroup>
+          {groups.map((_, gi) => (
+            <Fragment key={gi}>
+              <col style={{ width: `${numColPct}%` }} />
+              <col style={{ width: `${contentColPct}%` }} />
+            </Fragment>
+          ))}
+        </colgroup>
+        <thead>
+          <tr>
+            {groups.map((_, gi) => (
+              <Fragment key={gi}>
+                <th className={cn(TH, 'text-center')} />
+                <th className={TH}>영단어 / 뜻</th>
+              </Fragment>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: totalRows }, (_, ri) => {
+            const wordIdx = Math.floor(ri / blockSize);
+            const posInBlock = ri % blockSize;
+            return (
+              <tr key={ri} style={posInBlock > 0 ? { height: lineH } : undefined}>
+                {groups.map((group, gi) => {
+                  const word = group[wordIdx];
+                  if (!word) return <Fragment key={gi}><td className={TD} /><td className={TD} /></Fragment>;
+                  if (posInBlock === 0) {
+                    return (
+                      <Fragment key={gi}>
+                        <td className={cn(TD, 'text-center text-[var(--color-ink-faint)] whitespace-nowrap')}>{offsets[gi] + wordIdx + 1}</td>
+                        <td className={cn(TD, 'bg-[var(--color-canvas)] break-words')}>
+                          <span className="font-bold text-[var(--color-ink)]">{word.term}</span>
+                          <span className="ml-1.5 text-[var(--color-ink-muted)]" style={{ fontSize: '11px' }}>— {word.definition}</span>
+                        </td>
+                      </Fragment>
+                    );
+                  }
+                  return <Fragment key={gi}><td className={TD} /><td className={TD} /></Fragment>;
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -505,42 +592,61 @@ function ChecklistTable({ words, cols, fontSize, lineSpacing }: {
   words: Word[]; cols: number; fontSize: string; lineSpacing: string;
 }) {
   const groups = splitIntoColumns(words, cols);
+  const maxRows = Math.max(...groups.map(g => g.length));
+  const offsets = groups.map((_, gi) => groups.slice(0, gi).reduce((s, g) => s + g.length, 0));
   const fs = FS[fontSize] ?? '14px';
   const rowH = ROW_H[lineSpacing] ?? '28px';
 
   return (
-    <div className="worksheet-section flex gap-6">
-      {groups.map((group, gi) => {
-        const offset = groups.slice(0, gi).reduce((s, g) => s + g.length, 0);
-        return (
-          <table key={gi} className="flex-1 border-collapse" style={{ fontSize: fs }}>
-            <colgroup>
-              <col style={{ width: '22px' }} />
-              <col style={{ width: '18px' }} />
-              <col style={{ width: '40%' }} />
+    <div className="worksheet-section border border-[var(--color-hairline)] overflow-hidden">
+      <table className="w-full border-collapse table-fixed" style={{ fontSize: fs }}>
+        <colgroup>
+          {groups.map((_, gi) => (
+            <Fragment key={gi}>
+              <col style={{ width: '36px' }} />
+              <col style={{ width: '20px' }} />
+              <col style={{ width: `${Math.floor(36 / groups.length)}%` }} />
               <col />
-            </colgroup>
-            <tbody>
-              {group.map((word, i) => (
-                <tr key={word.id} style={{ height: rowH, borderBottom: '1px solid #E4E4E7', breakInside: 'avoid' }}>
-                  <td className="text-right pr-1.5 text-[var(--color-ink-faint)] align-middle" style={{ fontSize: '11px' }}>
-                    {offset + i + 1}.
-                  </td>
-                  <td className="align-middle px-1">
-                    <div className="w-3.5 h-3.5 rounded border border-[var(--color-ink)]" />
-                  </td>
-                  <td className="align-middle font-semibold text-[var(--color-ink)] pr-2">
-                    {word.term}
-                  </td>
-                  <td className="align-middle text-[var(--color-ink-muted)]">
-                    {word.definition}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        );
-      })}
+            </Fragment>
+          ))}
+        </colgroup>
+        <thead>
+          <tr>
+            {groups.map((_, gi) => (
+              <Fragment key={gi}>
+                <th className={cn(TH, 'text-center w-7')} />
+                <th className={cn(TH, 'text-center')}>☐</th>
+                <th className={TH}>영단어</th>
+                <th className={TH}>뜻 (한국어)</th>
+              </Fragment>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: maxRows }, (_, ri) => (
+            <tr key={ri} style={{ height: rowH }}>
+              {groups.map((group, gi) => {
+                const word = group[ri];
+                if (!word) return (
+                  <Fragment key={gi}>
+                    <td className={TD} /><td className={TD} /><td className={TD} /><td className={TD} />
+                  </Fragment>
+                );
+                return (
+                  <Fragment key={gi}>
+                    <td className={cn(TD, 'text-center text-[var(--color-ink-faint)] whitespace-nowrap')}>{offsets[gi] + ri + 1}</td>
+                    <td className={cn(TD, 'text-center')}>
+                      <div className="w-3.5 h-3.5 rounded border border-[var(--color-ink)] mx-auto" />
+                    </td>
+                    <td className={cn(TD, 'font-semibold text-[var(--color-ink)]')}>{word.term}</td>
+                    <td className={cn(TD, 'text-[var(--color-ink-muted)]')}>{word.definition}</td>
+                  </Fragment>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -551,45 +657,51 @@ function MultipleChoiceTable({ words, fontSize, lineSpacing, includeAnswer, ques
   words: Word[]; fontSize: string; lineSpacing: string; includeAnswer: boolean; questionField: 'definition' | 'term';
 }) {
   const fs = FS[fontSize] ?? '14px';
+  const qLabel = questionField === 'definition' ? '뜻 (한국어)' : '영단어';
   const rowH = lineSpacing === 'wide' ? '36px' : '28px';
 
   return (
     <>
-      <table className="worksheet-section w-full table-fixed border-collapse" style={{ fontSize: fs }}>
-        <colgroup>
-          <col style={{ width: '30px' }} />
-          <col />
-        </colgroup>
-        {words.map((word, i) => {
-          const others = shuffleArray(words.filter(w => w.id !== word.id)).slice(0, 3);
-          const choices = shuffleArray([word, ...others]);
-          return (
-            <tbody key={word.id} style={{ breakInside: 'avoid' }}>
-              <tr style={{ height: rowH, borderTop: i > 0 ? '1px solid #E4E4E7' : undefined }}>
-                <td className="text-right pr-2 text-[var(--color-ink-faint)] align-top pt-1.5" style={{ fontSize: '11px' }}>
-                  {i + 1}.
-                </td>
-                <td className="align-top pt-1.5 pr-4 font-semibold text-[var(--color-ink)] leading-snug break-words">
-                  {getQuestionText(word, questionField)}
-                </td>
-              </tr>
-              <tr style={{ height: rowH }}>
-                <td />
-                <td className="pb-2">
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 justify-items-start">
-                    {choices.map((c, j) => (
-                      <span key={c.id} className="flex min-w-0 items-start text-left text-[var(--color-ink-secondary)] leading-snug break-words">
-                        <span className="text-[var(--color-ink-faint)] mr-1">{String.fromCharCode(9312 + j)}</span>
-                        <span className="min-w-0 break-words">{getAnswerText(c, questionField)}</span>
-                      </span>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          );
-        })}
-      </table>
+      <div className="worksheet-section border border-[var(--color-hairline)] overflow-hidden">
+        <table className="w-full border-collapse table-fixed" style={{ fontSize: fs }}>
+          <colgroup>
+            <col style={{ width: '36px' }} />
+            <col style={{ width: '36%' }} />
+            <col />
+          </colgroup>
+          <thead>
+            <tr>
+              <th className={cn(TH, 'text-center w-7')} />
+              <th className={TH}>{qLabel}</th>
+              <th className={TH}>선택지</th>
+            </tr>
+          </thead>
+          <tbody>
+            {words.map((word, i) => {
+              const others = shuffleArray(words.filter(w => w.id !== word.id)).slice(0, 3);
+              const choices = shuffleArray([word, ...others]);
+              return (
+                <tr key={word.id} style={{ height: rowH }}>
+                  <td className={cn(TD, 'text-center text-[var(--color-ink-faint)] whitespace-nowrap align-top pt-2')}>{i + 1}</td>
+                  <td className={cn(TD, 'font-semibold text-[var(--color-ink)] leading-snug break-words align-top pt-2')}>
+                    {getQuestionText(word, questionField)}
+                  </td>
+                  <td className={TD}>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                      {choices.map((c, j) => (
+                        <span key={c.id} className="flex items-start text-[var(--color-ink-secondary)] leading-snug break-words min-w-0">
+                          <span className="text-[var(--color-ink-faint)] mr-1 shrink-0">{String.fromCharCode(9312 + j)}</span>
+                          <span className="min-w-0 break-words">{getAnswerText(c, questionField)}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
       {includeAnswer && <AnswerKeyTable words={words} cols={5} fontSize={fontSize} answerField={questionField === 'definition' ? 'term' : 'definition'} />}
     </>
   );
@@ -603,96 +715,122 @@ function TranslationTable({ words, cols, fontSize, lineSpacing, includeAnswer }:
   words: Word[]; cols: number; fontSize: string; lineSpacing: string; includeAnswer: boolean;
 }) {
   const groups = splitIntoColumns(words, cols);
+  const maxRows = Math.max(...groups.map(g => g.length));
+  const offsets = groups.map((_, gi) => groups.slice(0, gi).reduce((s, g) => s + g.length, 0));
   const fs = FS[fontSize] ?? '14px';
   const rowH = lineSpacing === 'wide' ? '44px' : '32px';
 
   return (
     <>
-      <div className="worksheet-section flex gap-6">
-        {groups.map((group, gi) => {
-          const offset = groups.slice(0, gi).reduce((s, g) => s + g.length, 0);
-          return (
-            <table key={gi} className="flex-1 border-collapse" style={{ fontSize: fs }}>
-              <colgroup>
-                <col style={{ width: '24px' }} />
-                <col style={{ width: '44%' }} />
+      <div className="worksheet-section border border-[var(--color-hairline)] overflow-hidden">
+        <table className="w-full border-collapse table-fixed" style={{ fontSize: fs }}>
+          <colgroup>
+            {groups.map((_, gi) => (
+              <Fragment key={gi}>
+                <col style={{ width: '36px' }} />
+                <col style={{ width: `${Math.floor(42 / groups.length)}%` }} />
                 <col />
-              </colgroup>
-              <tbody>
-                {group.map((word, i) => (
-                  <tr key={word.id} style={{ height: rowH, breakInside: 'avoid' }}>
-                    <td className="text-right pr-1.5 text-[var(--color-ink-faint)] align-middle" style={{ fontSize: '11px' }}>
-                      {offset + i + 1}.
-                    </td>
-                    <td className="align-middle pr-3 text-[var(--color-ink-secondary)]">
-                      {word.definition}
-                    </td>
-                    <td className="align-bottom" style={{ borderBottom: '1.5px solid #18181B' }} />
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          );
-        })}
+              </Fragment>
+            ))}
+          </colgroup>
+          <thead>
+            <tr>
+              {groups.map((_, gi) => (
+                <Fragment key={gi}>
+                  <th className={cn(TH, 'text-center w-7')} />
+                  <th className={TH}>뜻 (한국어)</th>
+                  <th className={TH}>영작</th>
+                </Fragment>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: maxRows }, (_, ri) => (
+              <tr key={ri} style={{ height: rowH }}>
+                {groups.map((group, gi) => {
+                  const word = group[ri];
+                  if (!word) return (
+                    <Fragment key={gi}>
+                      <td className={TD} /><td className={TD} /><td className={TD} />
+                    </Fragment>
+                  );
+                  return (
+                    <Fragment key={gi}>
+                      <td className={cn(TD, 'text-center text-[var(--color-ink-faint)] whitespace-nowrap')}>{offsets[gi] + ri + 1}</td>
+                      <td className={cn(TD, 'text-[var(--color-ink-secondary)] leading-snug')}>{word.definition}</td>
+                      <td className={TD} />
+                    </Fragment>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      {includeAnswer && (
-        <div className="worksheet-section mt-8 pt-5 border-t-2 border-dashed border-[var(--color-hairline)]">
-          <p className="font-bold text-[var(--color-ink-muted)] mb-2" style={{ fontSize: '12px' }}>[ 정답 ]</p>
-          <div className="worksheet-section flex gap-6">
-            {groups.map((group, gi) => {
-              const offset = groups.slice(0, gi).reduce((s, g) => s + g.length, 0);
-              const answerFs = Math.max(11, parseInt(fs) - 2) + 'px';
-              return (
-                <table key={gi} className="flex-1 border-collapse" style={{ fontSize: answerFs }}>
-                  <colgroup><col style={{ width: '22px' }} /><col /></colgroup>
-                  <tbody>
-                    {group.map((word, i) => (
-                      <tr key={word.id}>
-                        <td className="text-right pr-1.5 text-[var(--color-ink-faint)]">{offset + i + 1}.</td>
-                        <td className="font-semibold text-[var(--color-ink-secondary)] pl-0.5">{word.term}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {includeAnswer && <AnswerKeyTable words={words} cols={cols} fontSize={fontSize} answerField="term" />}
     </>
   );
 }
 
-function AnswerKeyTable({ words, cols, fontSize, answerField = 'term' }: {
-  words: Word[]; cols: number; fontSize: string; answerField?: 'term' | 'definition';
+function AnswerKeyTable({ words, cols, fontSize, answerField, randomFields }: {
+  words: Word[]; cols: number; fontSize: string;
+  answerField?: 'term' | 'definition';
+  randomFields?: ('term' | 'definition')[];
 }) {
   const groups = splitIntoColumns(words, cols);
-  const fs = FS[fontSize] ?? '14px';
-  const answerFs = Math.max(11, parseInt(fs) - 2) + 'px';
+  const maxRows = Math.max(...groups.map(g => g.length));
+  const offsets = groups.map((_, gi) => groups.slice(0, gi).reduce((s, g) => s + g.length, 0));
+  const answerFs = Math.max(11, parseInt(FS[fontSize] ?? '14') - 2) + 'px';
+
+  function getAnswer(word: Word, globalIdx: number): string {
+    if (randomFields) {
+      // randomFields[i] is the questionField used, so answer is the other field
+      return randomFields[globalIdx] === 'definition' ? word.term : word.definition;
+    }
+    return word[answerField ?? 'term'];
+  }
 
   return (
     <div className="worksheet-section mt-8 pt-5 border-t-2 border-dashed border-[var(--color-hairline)]">
       <p className="font-bold text-[var(--color-ink-muted)] mb-2" style={{ fontSize: '12px' }}>[ 정답 ]</p>
-      <div className="worksheet-section flex gap-6">
-        {groups.map((group, gi) => {
-          const offset = groups.slice(0, gi).reduce((s, g) => s + g.length, 0);
-          return (
-            <table key={gi} className="flex-1 border-collapse" style={{ fontSize: answerFs }}>
-              <colgroup>
-                <col style={{ width: '22px' }} />
+      <div className="border border-[var(--color-hairline)] overflow-hidden">
+        <table className="w-full border-collapse table-fixed" style={{ fontSize: answerFs }}>
+          <colgroup>
+            {groups.map((_, gi) => (
+              <Fragment key={gi}>
+                <col style={{ width: '24px' }} />
                 <col />
-              </colgroup>
-              <tbody>
-                {group.map((word, i) => (
-                  <tr key={word.id}>
-                    <td className="text-right pr-1.5 text-[var(--color-ink-faint)]">{offset + i + 1}.</td>
-                    <td className="font-semibold text-[var(--color-ink-secondary)] pl-0.5 leading-snug break-words">{word[answerField]}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          );
-        })}
+              </Fragment>
+            ))}
+          </colgroup>
+          <thead>
+            <tr>
+              {groups.map((_, gi) => (
+                <Fragment key={gi}>
+                  <th className="border border-[var(--color-hairline)] px-1.5 py-1 text-center text-[10px] font-bold bg-[var(--color-canvas)] text-[var(--color-ink-faint)]" />
+                  <th className="border border-[var(--color-hairline)] px-2 py-1 text-left text-[10px] font-bold bg-[var(--color-canvas)] text-[var(--color-ink-faint)]">정답</th>
+                </Fragment>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: maxRows }, (_, ri) => (
+              <tr key={ri}>
+                {groups.map((group, gi) => {
+                  const word = group[ri];
+                  if (!word) return <Fragment key={gi}><td className="border border-[var(--color-hairline)]" /><td className="border border-[var(--color-hairline)]" /></Fragment>;
+                  const globalIdx = offsets[gi] + ri;
+                  return (
+                    <Fragment key={gi}>
+                      <td className="border border-[var(--color-hairline)] px-1.5 py-0.5 text-center text-[var(--color-ink-faint)] whitespace-nowrap">{globalIdx + 1}</td>
+                      <td className="border border-[var(--color-hairline)] px-2 py-0.5 font-semibold text-[var(--color-ink-secondary)] leading-snug break-words">{getAnswer(word, globalIdx)}</td>
+                    </Fragment>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -716,9 +854,9 @@ function EditableSheet({ words, config, fontSize, lineSpacing, onDragEnd, onUpda
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={words.map(w => w.id)} strategy={verticalListSortingStrategy}>
-        <table className="w-full border-collapse" style={{ fontSize: fs }}>
+        <table className="w-full border-collapse table-fixed" style={{ fontSize: fs }}>
           <colgroup>
-            <col style={{ width: '28px' }} />
+            <col style={{ width: '36px' }} />
             {config.type === 'fill-blank' && <><col style={{ width: '44%' }} /><col /></>}
             {config.type === 'write-repeat' && <><col style={{ width: '55%' }} /><col /></>}
             {config.type === 'checklist' && <><col style={{ width: '20px' }} /><col style={{ width: '38%' }} /><col /></>}
@@ -753,7 +891,7 @@ function EditableTableRow({ word, index, config, rowH, editCell, onUpdate, lineS
   if (config.type === 'fill-blank') {
     const questionField = config.questionField ?? 'definition';
     return (
-      <tr style={{ height: rowH, borderBottom: '1px solid #E4E4E7' }}>
+      <tr style={{ height: rowH, borderBottom: '1px solid var(--color-hairline)' }}>
         <td className="text-right pr-1.5 text-[var(--color-ink-faint)] align-top pt-1 text-[11px]">{index + 1}.</td>
         <td className="align-top pt-1 pb-1 pr-2 text-[var(--color-ink-secondary)] leading-snug break-words">
           <span
@@ -762,7 +900,7 @@ function EditableTableRow({ word, index, config, rowH, editCell, onUpdate, lineS
             className={editCell}
           >{word[questionField]}</span>
         </td>
-        <td className="align-bottom" style={{ borderBottom: '1.5px solid #18181B' }} />
+        <td className="align-bottom" style={{ borderBottom: '1.5px solid var(--color-ink)' }} />
       </tr>
     );
   }
@@ -789,7 +927,7 @@ function EditableTableRow({ word, index, config, rowH, editCell, onUpdate, lineS
         </tr>
         {Array.from({ length: config.repeatCount ?? 3 }).map((_, j) => (
           <tr key={`${word.id}-l${j}`} style={{ height: lineH }}>
-            <td /><td colSpan={2} style={{ borderBottom: '1px solid #E4E4E7' }} />
+            <td /><td colSpan={2} style={{ borderBottom: '1px solid var(--color-hairline)' }} />
           </tr>
         ))}
         <tr key={`${word.id}-gap`} style={{ height: '6px' }}><td /><td colSpan={2} /></tr>
@@ -799,7 +937,7 @@ function EditableTableRow({ word, index, config, rowH, editCell, onUpdate, lineS
 
   if (config.type === 'checklist') {
     return (
-      <tr style={{ height: rowH, borderBottom: '1px solid #E4E4E7' }}>
+      <tr style={{ height: rowH, borderBottom: '1px solid var(--color-hairline)' }}>
         <td className="text-right pr-1.5 text-[var(--color-ink-faint)] align-middle text-[11px]">{index + 1}.</td>
         <td className="align-middle px-1"><div className="w-3.5 h-3.5 rounded border border-[var(--color-ink)]" /></td>
         <td className="align-middle pr-2">
@@ -822,7 +960,7 @@ function EditableTableRow({ word, index, config, rowH, editCell, onUpdate, lineS
 
   // multiple-choice (편집에서는 term/definition만 수정, 보기는 자동 생성이므로 단순 표시)
   return (
-    <tr style={{ height: rowH, borderBottom: '1px solid #E4E4E7' }}>
+    <tr style={{ height: rowH, borderBottom: '1px solid var(--color-hairline)' }}>
       <td className="text-right pr-1.5 text-[var(--color-ink-faint)] align-middle text-[11px]">{index + 1}.</td>
       <td className="align-middle pr-2 font-semibold text-[var(--color-ink)]">
         <span

@@ -317,6 +317,16 @@
     min-height: auto !important;
     break-inside: auto !important;
     page-break-inside: auto !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+  .worksheet-container table {
+    table-layout: fixed !important;
+  }
+  .worksheet-container th,
+  .worksheet-container td {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
   .worksheet-header {
     break-after: avoid;
@@ -334,5 +344,9 @@
   }
   .worksheet-container td {
     overflow-wrap: anywhere;
+  }
+  .worksheet-container td:first-child {
+    white-space: nowrap;
+    overflow: visible;
   }
 }
